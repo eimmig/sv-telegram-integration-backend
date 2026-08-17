@@ -1,0 +1,24 @@
+# Ambiente virtual e caches (uv/ruff/pytest)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Relatorio de cobertura consumido pelo SonarCloud
+coverage.xml
+.coverage
+
+# Segredos — nunca versionados (ver docs/OBSERVABILITY-AND-CONFIG.md no vault)
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# SO
+Thumbs.db
+.DS_Store

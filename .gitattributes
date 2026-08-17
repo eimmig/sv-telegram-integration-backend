@@ -1,0 +1,8 @@
+# Shell scripts e YAML precisam manter LF — rodam em Linux (runners de CI e containers).
+# Sem isso, um checkout Windows (core.autocrlf=true) gera copias CRLF que falham com
+# "bad interpreter: /bin/bash^M".
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.properties text eol=lf

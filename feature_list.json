@@ -1,0 +1,67 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Setup do projeto Python + webhook n8n",
+      "description": "Inicializar projeto Python 3.12+ com uv (pyproject.toml), ruff (lint/format) e mypy configurados (ver docs/CONVENTIONS.md). Fluxo n8n recebendo webhook do Telegram e normalizando o payload em JSON, exportado como arquivo versionado em n8n/. Dicionario de mensagens do bot por locale (pt-BR/en-US/es) selecionado por language_code - ver docs/CONVENTIONS.md secao 'Internacionalizacao'.",
+      "dependencies": [],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-002",
+      "name": "Parsing de mensagens nao estruturadas",
+      "description": "Rotina Python que recebe o JSON normalizado do n8n e extrai esporte, liga, mercado, odd, stake, casa de apostas, data, etc. Deve tratar mensagens malformadas sem derrubar o servico.",
+      "dependencies": [
+        "feat-001"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-003",
+      "name": "RF05 (suporte) - Fluxo de vinculo de conta Telegram",
+      "description": "Comando do bot (ex.: /vincular <codigo>) que repassa telegramUserId + codigo gerado no auth-service (via web) para o endpoint interno de confirmacao de vinculo, chamado atraves do api-gateway com X-Service-Key. Sem vinculo confirmado, o bot deve orientar o usuario (mensagem localizada via language_code, ver docs/CONVENTIONS.md 'Internacionalizacao') a vincular a conta antes de tentar capturar apostas - ver docs/services/telegram-integration.md secao 'Vinculo de conta'.",
+      "dependencies": [
+        "feat-002"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-004",
+      "name": "RF05 - Integracao com POST /api/v1/bets via api-gateway",
+      "description": "Chamar POST /api/v1/bets atraves do services/api-gateway (nao diretamente no bets-service), autenticando com header X-Service-Key (credencial de servico, ver docs/API-CONTRACTS.md) em vez de token PASETO. Nao duplicar validacoes de regra de negocio (RN02, RN03, RN06, RN07) - deixar o bets-service validar e retornar erro tratavel para o usuario do bot (mensagem de confirmacao/erro localizada via language_code). Tratar 401 do api-gateway (conta Telegram sem vinculo, ver feat-003) como erro de usuario, nao de sistema.",
+      "dependencies": [
+        "feat-003"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-005",
+      "name": "Pipeline de CI (GitHub Actions + SonarCloud)",
+      "description": "Workflow ja versionado em .github/workflows/ci.yml (dentro deste repositorio - este servico e seu proprio repositorio Git, nao um monorepo, ver docs/CI-CD.md) com 5 passos: validacao de CHANGELOG.md atualizado, validacao de chaves de traducao (locales/pt-BR.json, en-US.json, es.json - formato fechado em docs/DECISIONS-LOG.md 2026-08-02), build (uv sync + ruff check), testes unitarios + cobertura (pytest --cov), qualidade/cobertura no SonarCloud (sonar-project.properties, projectKey sv-telegram-integration-backend). Scripts de validacao em .github/scripts/ (duplicados neste repositorio, nao compartilhados). Repositorio GitHub: https://github.com/eimmig/sv-telegram-integration-backend.git. So funciona de fato apos este repositorio existir no GitHub e o setup do SonarCloud (org, projeto, SONAR_TOKEN, SONAR_ORGANIZATION) estar feito - ver docs/CI-CD.md secao 'Setup pendente'.",
+      "dependencies": [
+        "feat-001"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    }
+  ]
+}
