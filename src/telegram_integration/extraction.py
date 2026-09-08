@@ -92,6 +92,27 @@ def _extract_betting_house(text: str) -> str | None:
     return None
 
 
+_BARE_NUMBER_PATTERN = re.compile(r"\d{1,3}[.,]\d{1,2}|\d+")
+
+
+def parse_direct_answer(field: str, text: str) -> str:
+    """Normalizes a reply the user typed directly in answer to a specific
+    conversational-fallback question (see `orchestration.py`) - more lenient
+    than the free-text search in `extract_fields`, since the whole message is
+    known to be the answer for that one field (e.g. a bare "50" for stake,
+    without the R$ prefix `_extract_stake` requires when scanning free text).
+    Falls back to the stripped raw text when nothing recognizable is found,
+    rather than losing the user's answer.
+    """
+    stripped = text.strip()
+    if field in ("odd", "stake"):
+        match = _BARE_NUMBER_PATTERN.search(stripped)
+        return match.group(0).replace(",", ".") if match else stripped
+    if field == "bet_date":
+        return _extract_bet_date(stripped) or stripped
+    return stripped
+
+
 def extract_fields(text: str) -> ExtractedBet:
     return ExtractedBet(
         odd=_extract_odd(text),

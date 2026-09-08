@@ -1,3 +1,7 @@
 {
-  "generic_error": "Ocurrió un error. Inténtalo de nuevo más tarde."
+  "generic_error": "Ocurrió un error. Inténtalo de nuevo más tarde.",
+  "ask_odd": "¿Cuál fue la cuota de esa apuesta?",
+  "ask_stake": "¿Cuánto apostaste?",
+  "ask_bet_date": "¿En qué fecha hiciste esta apuesta? (dd/mm/aaaa)",
+  "bet_captured": "Capturamos lo que pudimos por ahora. El resto del registro llega pronto."
 }

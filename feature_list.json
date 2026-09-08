@@ -56,7 +56,7 @@
         {
           "id": "feat-002.3",
           "name": "Endpoint FastAPI de orquestracao (funde extracao + estado pendente, pergunta campo faltante ou retorna completo) + chaves i18n novas + extensao do n8n workflow (download de foto) + testes",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-188"
         },
         {
