@@ -15,5 +15,9 @@
   "catalog_empty_league": "Todavía no registraste ninguna liga/competición. Registra al menos una en el sitio antes de capturar apuestas por aquí.",
   "catalog_empty_market": "Todavía no registraste ningún mercado. Registra al menos uno en el sitio antes de capturar apuestas por aquí.",
   "catalog_empty_betting_house": "Todavía no registraste ninguna casa de apuestas. Registra al menos una en el sitio antes de capturar apuestas por aquí.",
-  "invalid_catalog_choice": "No entendí tu elección."
+  "invalid_catalog_choice": "No entendí tu elección.",
+  "bet_submitted": "¡Apuesta registrada con éxito!",
+  "bet_submit_no_link": "Tu cuenta de Telegram todavía no está vinculada. Envía /vincular <código> (generado en el sitio) antes de capturar apuestas por aquí.",
+  "bet_submit_catalog_not_found": "Una de las opciones elegidas ya no existe. Inténtalo de nuevo.",
+  "bet_submit_validation_failed": "Los valores indicados no son válidos para esta apuesta. Revisa la cuota y el monto apostado e inténtalo de nuevo."
 }

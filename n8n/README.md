@@ -21,25 +21,25 @@ Telegram, ramifica entre vínculo de conta, foto e texto, e chama o serviço Pyt
    credencial já configurada no Trigger — o serviço Python nunca vê o token do bot (decisão de
    `feat-002`, ver `docs/DECISIONS-LOG.md` 2026-09-08).
 7. **Normalize photo payload** / **Normalize text payload** (nós `Set`) — extraem
-   `telegramUserId`, `languageCode`, `chatId` e (conforme o ramo) `photoBase64` ou `text`, num
-   formato plano. Os dois convergem no mesmo nó seguinte.
+   `telegramUserId`, `languageCode`, `chatId`, `telegramUpdateId` (`feat-004`, ver abaixo) e
+   (conforme o ramo) `photoBase64` ou `text`, num formato plano. Os dois convergem no mesmo nó
+   seguinte.
 8. **Capture bet (Python)** (nó `HTTP Request`) — `POST /bets/capture` no serviço Python
-   (`feat-002`), corpo JSON com os campos normalizados.
+   (`feat-002`/`feat-004`), corpo JSON com os campos normalizados.
 9. **Send reply** (nó `Telegram`, `sendMessage`) — responde ao usuário com `message` da resposta
    do Python (confirmação/erro de vínculo, pergunta de campo faltante, ou confirmação de
    captura) — todo endpoint Python sempre devolve `chatId`/`message`, então este nó não precisa
    referenciar nó nenhum anterior, seja qual for o ramo percorrido.
 
-## Escopo (feat-002/feat-003) vs próximos passos
+## Escopo (feat-002/feat-003/feat-004) vs próximos passos
 
-Este workflow chama o serviço Python de verdade agora, mas **não resolve nome de casa de
-apostas/esporte/liga/mercado contra o catálogo do tenant nem registra a aposta** — isso é
-`feat-004` (a resposta "complete" do Python só devolve os campos extraídos brutos, não um
-`POST /api/v1/bets` pronto). `feat-003` também não gera o código de vínculo (isso é
-responsabilidade de `apps/web`, `epic-006`) — só confirma um código já existente. As URLs dos
-nós `HTTP Request` (`http://localhost:8000/bets/capture`, `http://localhost:8000/telegram/link`)
-são placeholder de desenvolvimento local — viram variável de ambiente/configuração do n8n quando
-este serviço for containerizado (fora do escopo de `feat-002`/`feat-003`).
+Este workflow chama o serviço Python de verdade e (`feat-004`) o Python agora resolve o catálogo
+do tenant e registra a aposta de verdade em `bets-service` via `api-gateway`. `feat-003` não gera
+o código de vínculo (isso é responsabilidade de `apps/web`, `epic-006`) — só confirma um código já
+existente. As URLs dos nós `HTTP Request` (`http://localhost:8000/bets/capture`,
+`http://localhost:8000/telegram/link`) são placeholder de desenvolvimento local — viram variável
+de ambiente/configuração do n8n quando este serviço for containerizado (fora do escopo de
+`feat-002`/`feat-003`/`feat-004`).
 
 ## Risco residual (registrado nos Plan Reviews de feat-001 e feat-002)
 
@@ -65,3 +65,10 @@ instância n8n real e confirmar**, em ordem de risco:
    link payload` novo (`feat-003`), com a mesma ressalva pro método `.split(\" \")[1]` usado ali
    (sintaxe JS padrão, mas o contexto de expressão do n8n em torno dela não foi validado contra
    uma instância real).
+5. **`{{$json["update_id"]}}`** (nós "Normalize text/photo payload", `feat-004`) — assume que o
+   payload bruto do Telegram Trigger tem `update_id` como campo de nível superior, irmão de
+   `message` (formato padrão da Bot API do Telegram), nunca referenciado neste workflow até
+   agora (todos os campos anteriores vêm de dentro de `message.*`). Usado como base do
+   `Idempotency-Key` da chamada `POST /api/v1/bets` (protege contra reenvio do mesmo webhook pelo
+   Telegram) — se o campo estiver em outro nível na instância real, a chave de idempotência vira
+   `None`/vazia silenciosamente; revisitar junto com o item 1 ao validar contra uma instância real.
