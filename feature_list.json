@@ -120,13 +120,13 @@
         {
           "id": "feat-004.1",
           "name": "catalog_client.py (GET paginado sports/leagues/markets/betting-houses via api-gateway) + testes",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-198"
         },
         {
           "id": "feat-004.2",
           "name": "PendingBet com fase de catalogo (snapshot de opcoes) + orchestration.py (fuzzy match betting_house, pergunta numerada sport/league/market, catalogo vazio) + chaves i18n novas + testes",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-199"
         },
         {
