@@ -50,7 +50,7 @@
         {
           "id": "feat-002.2",
           "name": "Modulo OCR (pytesseract) + modulo de extracao heuristica (odd/stake/data tipados, nomes brutos best-effort) + testes",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-187"
         },
         {

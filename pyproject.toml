@@ -9,6 +9,8 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
+    "pillow>=12.3.0",
+    "pytesseract>=0.3.13",
     "redis>=8.1.0",
     "uvicorn[standard]>=0.52.4",
 ]
@@ -24,7 +26,6 @@ build-backend = "uv_build"
 dev = [
     "httpx>=0.28.1",
     "mypy>=2.3.1",
-    "pillow>=12.3.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.6",
@@ -43,6 +44,10 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.12"
 strict = true
 files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = "pytesseract"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
