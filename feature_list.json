@@ -132,13 +132,13 @@
         {
           "id": "feat-004.3",
           "name": "bets_client.py (POST /api/v1/bets, conversao de bet_date pra Instant, Idempotency-Key via update_id) + n8n (telegramUpdateId) + mapeamento de outcomes + chaves i18n + testes",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-200"
         },
         {
           "id": "feat-004.4",
           "name": "CHANGELOG, verificacao final e revisao do vault (docs/services/telegram-integration.md, n8n/README.md - risco residual do update_id)",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-201"
         }
       ],
