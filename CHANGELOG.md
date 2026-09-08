@@ -22,3 +22,7 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-188](https://stakevault.atlassian.net/browse/SV-188) - Endpoint FastAPI de orquestracao (funde extracao + estado pendente, pergunta campo faltante ou retorna completo) + chaves i18n novas + extensao do n8n workflow (download de foto) + testes
 - [SV-189](https://stakevault.atlassian.net/browse/SV-189) - CHANGELOG e verificacao final
 - [SV-190](https://stakevault.atlassian.net/browse/SV-190) - Correcao pos-fechamento: extracao validada contra 5 bilhetes reais (usuario forneceu amostras)
+- [SV-191](https://stakevault.atlassian.net/browse/SV-191) - RF05 (suporte) - Fluxo de vinculo de conta Telegram
+- [SV-192](https://stakevault.atlassian.net/browse/SV-192) - Cliente HTTP direto para auth-service (auth_client.py) + X-Correlation-Id + testes
+- [SV-193](https://stakevault.atlassian.net/browse/SV-193) - Endpoint POST /telegram/link + chaves i18n novas + testes (5 outcomes x locales)
+- [SV-194](https://stakevault.atlassian.net/browse/SV-194) - n8n (roteamento /vincular) + docs (telegram-integration.md, API-CONTRACTS.md, DECISIONS-LOG.md) + CHANGELOG e verificacao final

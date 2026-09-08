@@ -2,5 +2,9 @@
   "generic_error": "Ocurrió un error. Inténtalo de nuevo más tarde.",
   "ask_odd": "¿Cuál fue la cuota de esa apuesta?",
   "ask_stake": "¿Cuánto apostaste?",
-  "bet_captured": "Capturamos lo que pudimos por ahora. El resto del registro llega pronto."
+  "bet_captured": "Capturamos lo que pudimos por ahora. El resto del registro llega pronto.",
+  "link_success": "¡Cuenta vinculada con éxito! Ya puedes registrar apuestas por aquí.",
+  "link_code_invalid": "Código no encontrado. Revisa el código generado en el sitio y envíalo de nuevo.",
+  "link_code_expired": "Ese código expiró. Genera un código nuevo en el sitio y envíalo de nuevo.",
+  "link_already_linked": "Esa cuenta ya está vinculada."
 }
