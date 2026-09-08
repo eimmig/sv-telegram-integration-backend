@@ -69,6 +69,12 @@ jobs:
           uv run ruff check .
 
       # 4. Testes unitarios + cobertura
+      - name: Instalar Tesseract OCR (feat-002 - extracao de bilhete via foto)
+        # Guarda propria por ocr.py (existe a partir de feat-002.2) - sem isso o teste de
+        # OCR falha com "tesseract is not installed" no runner, que nao tem o binario por
+        # padrao (so pip instala o wrapper Python, nao o motor de OCR em si).
+        if: hashFiles('src/telegram_integration/ocr.py') != ''
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-por
       - name: Testes unitarios e cobertura
         # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
         # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
