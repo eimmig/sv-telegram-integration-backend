@@ -21,3 +21,4 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-187](https://stakevault.atlassian.net/browse/SV-187) - Modulo OCR (pytesseract) + modulo de extracao heuristica (odd/stake/data tipados, nomes brutos best-effort) + testes
 - [SV-188](https://stakevault.atlassian.net/browse/SV-188) - Endpoint FastAPI de orquestracao (funde extracao + estado pendente, pergunta campo faltante ou retorna completo) + chaves i18n novas + extensao do n8n workflow (download de foto) + testes
 - [SV-189](https://stakevault.atlassian.net/browse/SV-189) - CHANGELOG e verificacao final
+- [SV-190](https://stakevault.atlassian.net/browse/SV-190) - Correcao pos-fechamento: extracao validada contra 5 bilhetes reais (usuario forneceu amostras)
