@@ -18,7 +18,7 @@
         {
           "id": "feat-001.2",
           "name": "i18n: locales/{pt-BR,en-US,es}.json + loader com fallback + testes",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-183"
         },
         {
