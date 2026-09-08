@@ -2,5 +2,9 @@
   "generic_error": "Ocorreu um erro. Tente novamente mais tarde.",
   "ask_odd": "Qual foi a odd dessa aposta?",
   "ask_stake": "Quanto você apostou (valor em R$)?",
-  "bet_captured": "Captura concluída até aqui. O restante do cadastro continua em breve."
+  "bet_captured": "Captura concluída até aqui. O restante do cadastro continua em breve.",
+  "link_success": "Conta vinculada com sucesso! Agora você já pode registrar apostas por aqui.",
+  "link_code_invalid": "Código não encontrado. Confira o código gerado no site e envie novamente.",
+  "link_code_expired": "Esse código expirou. Gere um novo código no site e envie novamente.",
+  "link_already_linked": "Essa conta já está vinculada."
 }

@@ -1,15 +1,26 @@
 import base64
+import uuid
 from typing import Annotated, Literal
 
 import redis
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel, ConfigDict, Field
 
+from telegram_integration.auth_client import LinkOutcome, confirm_telegram_link
 from telegram_integration.conversation import build_redis_client
+from telegram_integration.i18n import get_message
 from telegram_integration.ocr import extract_text
 from telegram_integration.orchestration import handle_message
 
 app = FastAPI(title="telegram-integration")
+
+_LINK_OUTCOME_MESSAGE_KEY = {
+    LinkOutcome.SUCCESS: "link_success",
+    LinkOutcome.CODE_NOT_FOUND: "link_code_invalid",
+    LinkOutcome.CODE_EXPIRED: "link_code_expired",
+    LinkOutcome.ALREADY_LINKED: "link_already_linked",
+    LinkOutcome.SERVICE_UNAVAILABLE: "generic_error",
+}
 
 _redis_client: redis.Redis | None = None
 
@@ -40,6 +51,18 @@ class CaptureResponse(BaseModel):
     bet: dict[str, str | None] | None = None
 
 
+class LinkAccountRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    telegram_user_id: str = Field(alias="telegramUserId")
+    language_code: str | None = Field(default=None, alias="languageCode")
+    code: str
+
+
+class LinkAccountResponse(BaseModel):
+    message: str
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -63,3 +86,11 @@ def capture_bet(
         chatId=payload.chat_id,
         bet=result.bet,
     )
+
+
+@app.post("/telegram/link")
+def link_account(payload: LinkAccountRequest) -> LinkAccountResponse:
+    correlation_id = str(uuid.uuid4())
+    outcome = confirm_telegram_link(payload.telegram_user_id, payload.code, correlation_id)
+    message_key = _LINK_OUTCOME_MESSAGE_KEY[outcome]
+    return LinkAccountResponse(message=get_message(message_key, payload.language_code))
