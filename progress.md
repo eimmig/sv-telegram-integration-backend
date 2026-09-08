@@ -3,8 +3,8 @@
 ## Estado Atual (Current State)
 
 **Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001`/`feat-002`/`feat-003` `done`; `feat-004` e `feat-005` são
-as próximas elegíveis, `feat-004` primeiro por ordem de dependência)
+**Feature ativa:** nenhuma (`feat-001`..`feat-004` `done`; `feat-005` e `feat-006` são as
+próximas elegíveis)
 
 ## Status
 
@@ -15,6 +15,8 @@ as próximas elegíveis, `feat-004` primeiro por ordem de dependência)
 - [x] `feat-002` (Parsing de mensagens não estruturadas, + `feat-002.5` correção pós-fechamento)
       — `done` em 2026-09-08.
 - [x] `feat-003` (RF05 suporte — fluxo de vínculo de conta Telegram) — `done` em 2026-09-08.
+- [x] `feat-004` (RF05 — integração com `POST /api/v1/bets` via `api-gateway`) — `done` em
+      2026-09-08.
 
 ### Em andamento
 
@@ -22,10 +24,13 @@ as próximas elegíveis, `feat-004` primeiro por ordem de dependência)
 
 ### Próximos passos (Next Steps)
 
-1. `feat-004` (RF05 — integração com `POST /api/v1/bets` via `api-gateway`) — depende de
-   `feat-003`, já `done`.
-2. `feat-005` (Pipeline de CI) — depende só de `feat-001`, já elegível em paralelo, mas
-   convencionalmente fechada por último (feature de fechamento formal do backlog).
+1. `feat-005` (Pipeline de CI) — depende só de `feat-001`, feature de fechamento formal (CI já
+   roda de verdade desde `epic-009`).
+2. `feat-006` (Checklist de validação pré-deploy) — depende de `feat-004`/`feat-005`. Reúne
+   riscos residuais que só podem ser resolvidos contra ambiente real (importar
+   `n8n/telegram-bot.json` numa instância n8n de verdade, revisitar autenticação/limites dos
+   endpoints internos quando containerizado) — não bloqueia `epic-005` sozinho, mas precisa
+   rodar antes de qualquer usuário real usar o bot em produção.
 
 ## `feat-001` fechada — bootstrap uv + FastAPI + i18n + n8n (2026-09-08)
 
@@ -214,12 +219,75 @@ PASS. 58 testes, 0 falhas, cobertura 99.57% (gate 80%). `./init.sh` do serviço 
 Libera `feat-004` (integração com `POST /api/v1/bets`); `epic-005` (raiz) continua `in-progress`
 até `feat-004`/`feat-005` também fecharem.
 
+## `feat-004` fechada — resolução de catálogo + submissão a bets-service (2026-09-08)
+
+Bloqueador real encontrado e resolvido **antes** desta feature, num repositório diferente:
+`api-gateway` nunca roteava `/api/v1/sports`, `/leagues`, `/markets` — só `betting-houses`/`bets`/
+`transactions` — apesar de esses 3 catálogos existirem em `bets-service` desde a `feat-002`
+daquele serviço. Corrigido criando e fechando `api-gateway feat-007` (2 PRs, CI/SonarCloud verdes)
+antes de escrever qualquer código desta feature.
+
+**Impedimento de produto resolvido com o usuário antes do Plan Review** (`AskUserQuestion`,
+registrado em `docs/DECISIONS-LOG.md`): `bets-service` exige 4 FKs obrigatórias
+(`bettingHouseId`/`sportId`/`leagueId`/`marketId`) em `POST /api/v1/bets`, mas `extraction.py`
+nunca resolve `sport`/`league`/`market` (sempre `None` por design da `feat-002`). Decidido: bot
+sempre pergunta `sport`/`league`/`market` por lista numerada (nunca auto-escolhe, mesmo com 1
+opção só); `betting_house` tenta fuzzy match exato (case-insensitive) contra o nome extraído
+primeiro; catálogo vazio bloqueia a captura orientando cadastro em `apps/web`, sem criar a
+entrada.
+
+**Módulos novos**: `catalog_client.py` (GET paginado dos 4 recursos via `api-gateway`, mesmo par
+`X-Service-Key`/`X-Telegram-User-Id` da submissão final, pagina até esgotar — o tamanho de página
+padrão, 20, esconderia catálogos maiores sem erro). `conversation.py` ganhou `catalog_ids` +
+`awaiting_catalog` (snapshot da lista de opções mostrada, para a resposta numérica nunca resolver
+contra um catálogo que mudou entre a pergunta e a resposta). `bets_client.py` (POST final,
+conversão de `bet_date` — data pura — para `Instant` completo — achado MAJOR do Plan Review:
+`CreateBetRequest.betDate` é `@NotNull Instant`, uma data pura seria rejeitada pelo Jackson antes
+de qualquer validação de negócio; `Idempotency-Key` derivada do `update_id` nativo do Telegram,
+não de um hash do conteúdo da aposta — um hash colidiria entre duas apostas legítimas com
+odd/stake/casa iguais, e não protegeria contra o evento real que a chave existe pra evitar
+— reenvio do mesmo webhook).
+
+**Decisão de arquitetura minha durante a implementação** (não prevista no Plan Review original):
+`orchestration.py` parou de limpar o estado da conversa ao chegar em `"complete"` — esse status
+passou a significar "todo campo/ID de catálogo resolvido, pronto pra submeter", não "já
+submetido". `main.py` só limpa o Redis depois de confirmar o resultado real da submissão.
+
+**Achado real do Delivery Reviewer, corrigido antes de fechar**: os outcomes
+`CATALOG_ENTRY_NOT_FOUND`/`VALIDATION_FAILED` preservavam esse estado e diziam "tente
+novamente" — mas reenviar o mesmo `catalogId` obsoleto ou a mesma `odd`/`stake` inválida faria a
+submissão falhar identicamente pra sempre (loop até o TTL de 15 min expirar, sem o usuário
+conseguir sair). Diferente de `NO_TELEGRAM_LINK`/`SERVICE_UNAVAILABLE` (onde o dado da aposta
+está correto e só uma condição externa precisa mudar — vincular a conta, a infra voltar),
+corrigido pra também limpar o estado nesses 2 casos, com a mensagem trocada de "tente novamente"
+pra "envie os dados da aposta novamente".
+
+**2 achados reais do Test Suite Auditor, corrigidos**: o fuzzy match de `betting_house`
+(`len(matches) == 1`, cai pra pergunta em 0 ou 2+ matches) nunca tinha teste pro caso de 2+
+matches — `bets-service` garante `UNIQUE(name)` por schema, mas não necessariamente
+case-insensitive, então `"Bet365"`/`"BET365"` podem legitimamente coexistir; um refactor
+descuidado escolhendo a primeira opção passaria despercebido. Nenhum teste provava que a resposta
+numérica usa o snapshot da pergunta, não uma nova busca ao catálogo — todos os stubs anteriores
+eram constantes, mascarando esse risco. Os 2 testes novos mudam o catálogo entre pergunta e
+resposta pra provar isso de verdade.
+
+4 subtasks (SV-198..201, story SV-197), PRs de subtask (#16, #17, #18, #19) + 1 PR de story (#20,
+`feature -> develop`), CI real e verde incluindo SonarCloud. 85 testes, 0 falhas, cobertura 100%
+(gate 80%). `./init.sh` do serviço e da raiz verdes. Vault atualizado no mesmo commit lógico:
+`docs/services/telegram-integration.md` (fluxo completo, corrige claim desatualizada sobre
+`api-gateway` rotear `telegram-accounts`), `docs/API-CONTRACTS.md` (`Idempotency-Key` via
+`update_id`), `docs/DECISIONS-LOG.md` (resolução de catálogo), `n8n/README.md` (7º ponto de risco
+residual). `feat-006` criada como backlog (checklist de validação pré-deploy, reúne os residuais
+que só um ambiente real resolve). Libera `feat-005`/`feat-006`; `epic-005` (raiz) continua
+`in-progress` até essas duas também fecharem.
+
 ## Bloqueios / Riscos
 
-- Nenhum aberto. `n8n/telegram-bot.json` tem 6 pontos não validados contra instância real
-  (2 novos de `feat-003`: `operation: "startsWith"` do nó `IF` novo, e o contexto de expressão em
-  torno de `.split(" ")[1]` no nó `Set` novo), documentados em `n8n/README.md` — não bloqueante,
-  revisitar antes de produção.
+- Nenhum aberto que bloqueie fechar `epic-005` além de `feat-005`/`feat-006` (ambas já elegíveis).
+  `n8n/telegram-bot.json` tem agora 7 pontos não validados contra instância real (novo de
+  `feat-004`: campo `update_id` como nível superior do payload, nunca referenciado antes neste
+  workflow), documentados em `n8n/README.md` e reunidos no checklist de `feat-006` — não
+  bloqueante para o código em si, mas precisa rodar antes de qualquer usuário real usar o bot.
 - `POST /bets/capture` e `POST /telegram/link` sem autenticação própria nem limite de tamanho de
   corpo — aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto),
   revisitar quando containerizado. `POST /telegram/link` também sem rate limiting no lado
