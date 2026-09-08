@@ -18,6 +18,6 @@
   "invalid_catalog_choice": "I didn't understand your choice.",
   "bet_submitted": "Bet registered successfully!",
   "bet_submit_no_link": "Your Telegram account isn't linked yet. Send /vincular <code> (generated on the website) before capturing bets here.",
-  "bet_submit_catalog_not_found": "One of the chosen options no longer exists. Please try again.",
-  "bet_submit_validation_failed": "The values provided aren't valid for this bet. Check the odd and stake and try again."
+  "bet_submit_catalog_not_found": "One of the chosen options no longer exists. Please send the bet details again.",
+  "bet_submit_validation_failed": "The values provided aren't valid for this bet (check the odd and stake). Please send the bet details again."
 }

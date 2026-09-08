@@ -18,6 +18,6 @@
   "invalid_catalog_choice": "No entendí tu elección.",
   "bet_submitted": "¡Apuesta registrada con éxito!",
   "bet_submit_no_link": "Tu cuenta de Telegram todavía no está vinculada. Envía /vincular <código> (generado en el sitio) antes de capturar apuestas por aquí.",
-  "bet_submit_catalog_not_found": "Una de las opciones elegidas ya no existe. Inténtalo de nuevo.",
-  "bet_submit_validation_failed": "Los valores indicados no son válidos para esta apuesta. Revisa la cuota y el monto apostado e inténtalo de nuevo."
+  "bet_submit_catalog_not_found": "Una de las opciones elegidas ya no existe. Envía los datos de la apuesta de nuevo.",
+  "bet_submit_validation_failed": "Los valores indicados no son válidos para esta apuesta (revisa la cuota y el monto apostado). Envía los datos de la apuesta de nuevo."
 }
