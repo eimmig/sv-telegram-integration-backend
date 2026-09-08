@@ -45,7 +45,7 @@ class NormalizedMessage(BaseModel):
 class CaptureResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    status: Literal["pending", "complete"]
+    status: Literal["pending", "complete", "blocked"]
     message: str
     chat_id: str = Field(alias="chatId")
     bet: dict[str, str | None] | None = None
@@ -82,7 +82,8 @@ def capture_bet(
     else:
         text = payload.text or ""
 
-    result = handle_message(client, payload.telegram_user_id, payload.language_code, text)
+    correlation_id = str(uuid.uuid4())
+    result = handle_message(client, payload.telegram_user_id, payload.language_code, text, correlation_id)
 
     return CaptureResponse(
         status=result.status,

@@ -4,7 +4,13 @@ import pytest
 import redis
 from testcontainers.community.redis import RedisContainer
 
-from telegram_integration.conversation import PendingBet, clear_pending, get_pending, save_pending
+from telegram_integration.conversation import (
+    CatalogQuestion,
+    PendingBet,
+    clear_pending,
+    get_pending,
+    save_pending,
+)
 
 
 @pytest.fixture(scope="module")
@@ -33,6 +39,19 @@ def test_clear_pending_removes_the_state(redis_client: redis.Redis) -> None:
     clear_pending(redis_client, "user-2")
 
     assert get_pending(redis_client, "user-2") is None
+
+
+def test_round_trips_catalog_ids_and_awaiting_catalog_question(redis_client: redis.Redis) -> None:
+    pending = PendingBet(
+        fields={"odd": "1.85", "stake": "50"},
+        catalog_ids={"bettingHouseId": "bh-1"},
+        awaiting_catalog=CatalogQuestion(catalog_type="sport", options=[{"id": "sp-1", "name": "Futebol"}]),
+    )
+
+    save_pending(redis_client, "user-4", pending)
+    loaded = get_pending(redis_client, "user-4")
+
+    assert loaded == pending
 
 
 def test_save_pending_sets_a_ttl(redis_client: redis.Redis) -> None:
