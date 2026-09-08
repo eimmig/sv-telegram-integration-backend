@@ -156,6 +156,20 @@
       "jira": "",
       "subtasks": [],
       "evidence": ""
+    },
+    {
+      "id": "feat-006",
+      "name": "Checklist de validacao pre-deploy",
+      "description": "Feature de fechamento final do backlog atual - reune riscos residuais aceitos ao longo de feat-002..004 que so podem ser resolvidos de verdade contra um ambiente real (instancia n8n real, servico containerizado/exposto), nao antes: (1) n8n/telegram-bot.json nunca foi importado numa instancia n8n real - foi montado a mao a partir de documentacao/conhecimento treinado (docs.n8n.io/workflows/export-import retornou 404 durante a pesquisa em feat-001); 7 pontos especificos documentados em n8n/README.md secao 'Risco residual' (expressao {{$binary.data.data}}, schema de conditions do no IF, nomes de parametro do no Telegram, formato values.string do no Set + .split(' ')[1], campo update_id como nivel superior do payload) - importar numa instancia real e corrigir o que divergir antes de qualquer usuario real usar o bot. (2) POST /bets/capture e POST /telegram/link sem autenticacao propria nem limite de tamanho de corpo (aceitavel so enquanto rede local/interna, servico nao containerizado/exposto - feat-002/003) - revisitar ao containerizar. (3) POST /api/v1/telegram-accounts em auth-service (confirmacao de vinculo) sem rate limiting (aceito em telegram-integration feat-003 por TTL curto + espaco de busca grande mitigarem) - revisitar se o servico for exposto alem da rede interna. (4) bet_date default usa UTC, nao horario de Brasilia (possivel off-by-one perto da meia-noite BRT, feat-002.5) - nenhuma convencao de timezone existe no projeto; decidir com o usuario se compensa antes do deploy. Nao inclui: limitacoes de extracao de odd (texto colorido/riscado, layout em coluna) - aceitas como comportamento esperado do fallback conversacional, nao sao bug a corrigir.",
+      "dependencies": [
+        "feat-004",
+        "feat-005"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
     }
   ]
 }
