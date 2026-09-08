@@ -31,9 +31,15 @@ class CaptureResult:
 
 
 def _merge(existing: dict[str, str | None], newly_extracted: ExtractedBet) -> dict[str, str | None]:
+    """Always returns the full ExtractedBet shape (every field name present,
+    even as None) - a sparse dict here would make the "bet" output
+    inconsistent between a single complete message (full shape) and a
+    multi-turn conversation (would otherwise only contain whichever fields
+    were actually ever assigned a value).
+    """
     merged = dict(existing)
     for name, value in newly_extracted.__dict__.items():
-        if merged.get(name) is None and value is not None:
+        if merged.get(name) is None:
             merged[name] = value
     return merged
 
