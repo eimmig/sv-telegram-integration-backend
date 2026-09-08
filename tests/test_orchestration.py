@@ -89,7 +89,17 @@ def test_full_multi_turn_flow_resolves_every_catalog_and_completes(redis_client:
     assert final.bet["sportId"] == "sp-1"
     assert final.bet["leagueId"] == "lg-1"
     assert final.bet["marketId"] == "mk-1"
-    assert get_pending(redis_client, "user-d") is None
+    # Not cleared here - main.py only clears it after actually submitting the
+    # bet to bets-service (see bets_client.py); a retry (any message) reaches
+    # "complete" again immediately since nothing is left to resolve.
+    pending = get_pending(redis_client, "user-d")
+    assert pending is not None
+    assert pending.awaiting_catalog is None
+    assert pending.awaiting_field is None
+
+    retry = handle_message(redis_client, "user-d", "pt-BR", "qualquer coisa", "corr-1")
+    assert retry.status == "complete"
+    assert retry.bet == final.bet
 
 
 def test_invalid_catalog_choice_reprompts_the_same_question(redis_client: redis.Redis) -> None:

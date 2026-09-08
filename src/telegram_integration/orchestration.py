@@ -164,7 +164,12 @@ def _advance_catalog(
         question = _format_choice_question(_CATALOG_QUESTION_KEYS[catalog_type], options, language_code)
         return CaptureResult(status="pending", message=question, bet=None)
 
-    clear_pending(client, telegram_user_id)
+    # Not cleared here on purpose: main.py still needs to submit the bet to
+    # bets-service. If that submission fails, the resolved fields/catalog ids
+    # stay in Redis so the user can retry with any message instead of
+    # re-answering every question - this branch already has nothing left to
+    # resolve, so the next call reaches "complete" again immediately.
+    save_pending(client, telegram_user_id, PendingBet(fields=fields, catalog_ids=catalog_ids))
     confirmation = get_message("bet_captured", language_code)
     return CaptureResult(status="complete", message=confirmation, bet={**fields, **catalog_ids})
 

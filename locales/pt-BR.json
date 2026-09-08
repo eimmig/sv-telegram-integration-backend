@@ -15,5 +15,9 @@
   "catalog_empty_league": "Você ainda não cadastrou nenhuma liga/competição. Cadastre pelo menos uma no site antes de registrar apostas por aqui.",
   "catalog_empty_market": "Você ainda não cadastrou nenhum mercado. Cadastre pelo menos um no site antes de registrar apostas por aqui.",
   "catalog_empty_betting_house": "Você ainda não cadastrou nenhuma casa de apostas. Cadastre pelo menos uma no site antes de registrar apostas por aqui.",
-  "invalid_catalog_choice": "Não entendi sua escolha."
+  "invalid_catalog_choice": "Não entendi sua escolha.",
+  "bet_submitted": "Aposta registrada com sucesso!",
+  "bet_submit_no_link": "Sua conta do Telegram ainda não está vinculada. Envie /vincular <código> (gerado no site) antes de registrar apostas por aqui.",
+  "bet_submit_catalog_not_found": "Uma das opções escolhidas não existe mais. Tente novamente.",
+  "bet_submit_validation_failed": "Os valores informados não são válidos para essa aposta. Confira a odd e o valor apostado e tente novamente."
 }
