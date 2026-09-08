@@ -126,13 +126,13 @@
         {
           "id": "feat-004.2",
           "name": "PendingBet com fase de catalogo (snapshot de opcoes) + orchestration.py (fuzzy match betting_house, pergunta numerada sport/league/market, catalogo vazio) + chaves i18n novas + testes",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-199"
         },
         {
           "id": "feat-004.3",
           "name": "bets_client.py (POST /api/v1/bets, conversao de bet_date pra Instant, Idempotency-Key via update_id) + n8n (telegramUpdateId) + mapeamento de outcomes + chaves i18n + testes",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-200"
         },
         {
