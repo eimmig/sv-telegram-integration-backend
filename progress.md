@@ -73,10 +73,74 @@ não deste script de conveniência local).
 `feat-002` (parsing de mensagens); `epic-005` (raiz) continua `in-progress` até `feat-002..005`
 também fecharem.
 
+## `feat-002` fechada — OCR + extração heurística + fallback conversacional (2026-09-08)
+
+Impedimento real resolvido antes de codificar: `feat-002` ("Parsing de mensagens não
+estruturadas") nunca teve o formato da mensagem definido em nenhuma nota. Decisão tomada com o
+usuário (`AskUserQuestion`, 2 perguntas, registrada em `docs/DECISIONS-LOG.md`): usuário pode
+enviar **foto do bilhete** (a casa de apostas gera esse comprovante nativamente) **ou texto
+livre**; motor de OCR = **Tesseract local** via `pytesseract`, não API de nuvem (sem custo, sem
+segredo, sem dependência de rede externa — alinhado ao resto do projeto). Sem amostra real de
+bilhete disponível (usuário: "as diferentes casas têm diferentes modelos... teria que tentar
+buscar as infos meio genericamente"), então a extração é heurística genérica, sem template por
+casa, com fallback conversacional explicitamente autorizado pelo usuário ("caso ache isso demais,
+pode usar o modelo do cadastro bot pergunta e tu responde").
+
+**Ambiente**: Tesseract não estava instalado nesta máquina — `choco` falhou por falta de admin,
+resolvido via `winget` (já estava instalado, só fora do PATH) + `tessdata` `por`/`eng` baixados
+pra `~/.local/tessdata` (Program Files é read-only sem admin) + `TESSDATA_PREFIX`/`TESSERACT_CMD`
+persistidos via PowerShell.
+
+**Módulos novos**: `conversation.py` (estado de conversa no Redis já provisionado em `infra/`
+para `stats-service`, TTL 15min, testado com `testcontainers.community.redis` real — não
+`fakeredis`, mesmo padrão Testcontainers já usado nos 3 serviços Java). `ocr.py`
+(`pytesseract`, `por+eng`, nunca lança exceção — bytes inválidos viram `""`, testado com imagem
+sintética renderizada via Pillow, já que não há bilhete real disponível). `extraction.py` (só
+`odd`/`stake`/`bet_date` — padrão léxico universal, número decimal/prefixo de moeda/data — e
+`betting_house` — lista curta de casas brasileiras conhecidas — são extraídos com confiança real;
+`sport`/`league`/`market`/`team1`/`team2` **sempre `None`**, documentado como não tentado em vez
+de fingir robustez que não existe; `parse_direct_answer` normaliza resposta direta a uma pergunta
+específica, mais permissivo que a busca em texto livre). `orchestration.py` (funde extração nova
+com estado pendente, pergunta o primeiro campo obrigatório faltante ou retorna resultado
+completo). `main.py` (`POST /bets/capture` — Pydantic, texto ou foto base64, roda OCR se foto).
+
+**2 achados reais MAJOR do Plan Review, corrigidos antes de codificar**: (1) `bets-service`
+espera IDs de catálogo (`bettingHouseId`/`sportId`/`leagueId`/`marketId` — UUID), não nomes — OCR
+só produz nomes; escopo desta feature reduzido pra produzir campos **brutos**, resolução
+nome→catálogo fica pra `feat-004`, não empurrada indevidamente pra cá. (2) plano original cogitava
+o próprio Python baixar a foto via Telegram Bot API (`getFile`), exigindo `TELEGRAM_BOT_TOKEN`
+como segredo novo neste serviço — corrigido pra n8n baixar (já tem a credencial do Telegram
+configurada no Trigger desde `feat-001`) e passar a imagem em base64 — Python nunca vê o token do
+bot, mantendo n8n como único dono de credencial do Telegram.
+
+**2 achados reais encontrados durante a implementação/revisão** (não no Plan Review): caminho de
+resposta direta a uma pergunta armazenava texto cru sem normalizar (data "08/09/2026" em vez de
+"2026-09-08", inconsistente com o caminho de extração de mensagem única) — corrigido com
+`parse_direct_answer`. Delivery Reviewer encontrou dict de campos **esparso** no fluxo
+multi-turno (só as chaves que tiveram valor real, formato inconsistente com o de 9 chaves da
+extração de mensagem única) — corrigido em `_merge`; só foi pego depois de escrever um teste novo
+ponta a ponta pela HTTP real (`test_multi_turn_conversation_carries_state_across_separate_requests`)
+— os testes de `orchestration.py` sozinhos, chamando `handle_message` direto, não expunham o bug.
+
+`n8n/telegram-bot.json` estendido: nó `IF` ramifica foto/texto, nó `Telegram` baixa a foto (maior
+resolução, `resource: file`/`operation: get`), nó `HTTP Request` chama o endpoint novo, nó
+`Telegram` `sendMessage` responde ao usuário. Residual risk expandido em `n8n/README.md` (4
+pontos não validados contra instância real, ordenados por risco — expressão de binário→base64 é
+o mais incerto).
+
+4 subtasks (SV-186..189, story SV-185), 4 PRs de subtask (#5, #6, #7, #8) + 1 PR de story (#9,
+`feature -> develop`), todos com CI real e verde — Tesseract instalado no runner (achado real: só
+o wrapper `pip` estava sendo instalado antes, não o motor de OCR em si) e Redis via
+`testcontainers` rodando de verdade no CI, não só localmente. SonarCloud verde de primeira. 45
+testes, 0 falhas, cobertura 100% (gate 80%). `./init.sh` do serviço e da raiz verdes.
+
 ## Bloqueios / Riscos
 
-- Nenhum aberto. Risco residual do `n8n/telegram-bot.json` (não testado contra instância real de
-  n8n) documentado em `n8n/README.md`, não bloqueante.
+- Nenhum aberto. `n8n/telegram-bot.json` tem 4 pontos não validados contra instância real,
+  documentados em `n8n/README.md` — não bloqueante, revisitar antes de produção.
+- `POST /bets/capture` sem autenticação própria nem limite de tamanho de corpo pro base64 da
+  foto — aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto),
+  revisitar quando containerizado.
 
 ## Harness criado (2026-07-30)
 
