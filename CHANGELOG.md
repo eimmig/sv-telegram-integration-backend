@@ -26,3 +26,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-192](https://stakevault.atlassian.net/browse/SV-192) - Cliente HTTP direto para auth-service (auth_client.py) + X-Correlation-Id + testes
 - [SV-193](https://stakevault.atlassian.net/browse/SV-193) - Endpoint POST /telegram/link + chaves i18n novas + testes (5 outcomes x locales)
 - [SV-194](https://stakevault.atlassian.net/browse/SV-194) - n8n (roteamento /vincular) + docs (telegram-integration.md, API-CONTRACTS.md, DECISIONS-LOG.md) + CHANGELOG e verificacao final
+- [SV-197](https://stakevault.atlassian.net/browse/SV-197) - RF05 - Integracao com POST /api/v1/bets via api-gateway
+- [SV-198](https://stakevault.atlassian.net/browse/SV-198) - catalog_client.py (GET paginado sports/leagues/markets/betting-houses via api-gateway) + testes
+- [SV-199](https://stakevault.atlassian.net/browse/SV-199) - PendingBet com fase de catalogo (snapshot de opcoes) + orchestration.py (fuzzy match betting_house, pergunta numerada sport/league/market, catalogo vazio) + chaves i18n novas + testes
+- [SV-200](https://stakevault.atlassian.net/browse/SV-200) - bets_client.py (POST /api/v1/bets, conversao de bet_date pra Instant, Idempotency-Key via update_id) + n8n (telegramUpdateId) + mapeamento de outcomes + chaves i18n + testes
+- [SV-201](https://stakevault.atlassian.net/browse/SV-201) - CHANGELOG, verificacao final e revisao do vault (docs/services/telegram-integration.md, n8n/README.md - risco residual do update_id)

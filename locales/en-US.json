@@ -6,5 +6,18 @@
   "link_success": "Account linked successfully! You can now register bets here.",
   "link_code_invalid": "Code not found. Check the code generated on the website and send it again.",
   "link_code_expired": "That code expired. Generate a new code on the website and send it again.",
-  "link_already_linked": "This account is already linked."
+  "link_already_linked": "This account is already linked.",
+  "ask_sport": "Which sport is this bet for? Reply with the option number:",
+  "ask_league": "Which league/competition is this bet for? Reply with the option number:",
+  "ask_market": "Which market is this bet for? Reply with the option number:",
+  "ask_betting_house_choice": "I couldn't identify the bookmaker. Which of the options below is correct? Reply with the number:",
+  "catalog_empty_sport": "You haven't registered any sport yet. Register at least one on the website before capturing bets here.",
+  "catalog_empty_league": "You haven't registered any league/competition yet. Register at least one on the website before capturing bets here.",
+  "catalog_empty_market": "You haven't registered any market yet. Register at least one on the website before capturing bets here.",
+  "catalog_empty_betting_house": "You haven't registered any bookmaker yet. Register at least one on the website before capturing bets here.",
+  "invalid_catalog_choice": "I didn't understand your choice.",
+  "bet_submitted": "Bet registered successfully!",
+  "bet_submit_no_link": "Your Telegram account isn't linked yet. Send /vincular <code> (generated on the website) before capturing bets here.",
+  "bet_submit_catalog_not_found": "One of the chosen options no longer exists. Please send the bet details again.",
+  "bet_submit_validation_failed": "The values provided aren't valid for this bet (check the odd and stake). Please send the bet details again."
 }

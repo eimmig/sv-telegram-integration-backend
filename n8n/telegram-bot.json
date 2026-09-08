@@ -143,6 +143,10 @@
             {
               "name": "photoBase64",
               "value": "={{$binary.data.data}}"
+            },
+            {
+              "name": "telegramUpdateId",
+              "value": "={{$node[\"Telegram Trigger\"].json[\"update_id\"]}}"
             }
           ]
         },
@@ -173,6 +177,10 @@
             {
               "name": "chatId",
               "value": "={{$json[\"message\"][\"chat\"][\"id\"]}}"
+            },
+            {
+              "name": "telegramUpdateId",
+              "value": "={{$json[\"update_id\"]}}"
             }
           ]
         },
@@ -190,7 +198,7 @@
         "url": "http://localhost:8000/bets/capture",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"text\": $json.text, \"photoBase64\": $json.photoBase64 } }}",
+        "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"text\": $json.text, \"photoBase64\": $json.photoBase64, \"telegramUpdateId\": $json.telegramUpdateId } }}",
         "options": {}
       }
     },

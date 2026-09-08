@@ -7,7 +7,8 @@ from fastapi import Depends, FastAPI
 from pydantic import BaseModel, ConfigDict, Field
 
 from telegram_integration.auth_client import LinkOutcome, confirm_telegram_link
-from telegram_integration.conversation import build_redis_client
+from telegram_integration.bets_client import SubmitOutcome, submit_bet
+from telegram_integration.conversation import build_redis_client, clear_pending
 from telegram_integration.i18n import get_message
 from telegram_integration.ocr import extract_text
 from telegram_integration.orchestration import handle_message
@@ -21,6 +22,27 @@ _LINK_OUTCOME_MESSAGE_KEY = {
     LinkOutcome.ALREADY_LINKED: "link_already_linked",
     LinkOutcome.SERVICE_UNAVAILABLE: "generic_error",
 }
+
+_SUBMIT_OUTCOME_MESSAGE_KEY = {
+    SubmitOutcome.CREATED: "bet_submitted",
+    SubmitOutcome.ALREADY_SUBMITTED: "bet_submitted",
+    SubmitOutcome.NO_TELEGRAM_LINK: "bet_submit_no_link",
+    SubmitOutcome.CATALOG_ENTRY_NOT_FOUND: "bet_submit_catalog_not_found",
+    SubmitOutcome.VALIDATION_FAILED: "bet_submit_validation_failed",
+    SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error",
+}
+_SUBMIT_SUCCESS_OUTCOMES = (SubmitOutcome.CREATED, SubmitOutcome.ALREADY_SUBMITTED)
+# NO_TELEGRAM_LINK/SERVICE_UNAVAILABLE keep the resolved bet in Redis on purpose -
+# the data itself is fine, only an external condition needs to change before a
+# retry can succeed (link the account; wait out the outage). CATALOG_ENTRY_NOT_FOUND
+# and VALIDATION_FAILED mean the bet's own data is what's wrong - preserving it
+# would just make every retry fail the same way forever, so those also clear state
+# alongside a real success.
+_SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
+    *_SUBMIT_SUCCESS_OUTCOMES,
+    SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
+    SubmitOutcome.VALIDATION_FAILED,
+)
 
 _redis_client: redis.Redis | None = None
 
@@ -40,12 +62,13 @@ class NormalizedMessage(BaseModel):
     chat_id: str = Field(alias="chatId")
     text: str | None = None
     photo_base64: str | None = Field(default=None, alias="photoBase64")
+    telegram_update_id: str | None = Field(default=None, alias="telegramUpdateId")
 
 
 class CaptureResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    status: Literal["pending", "complete"]
+    status: Literal["pending", "complete", "blocked"]
     message: str
     chat_id: str = Field(alias="chatId")
     bet: dict[str, str | None] | None = None
@@ -82,13 +105,29 @@ def capture_bet(
     else:
         text = payload.text or ""
 
-    result = handle_message(client, payload.telegram_user_id, payload.language_code, text)
+    correlation_id = str(uuid.uuid4())
+    result = handle_message(client, payload.telegram_user_id, payload.language_code, text, correlation_id)
+
+    status, message, bet = result.status, result.message, result.bet
+    if result.status == "complete" and result.bet is not None:
+        idempotency_key = (
+            f"{payload.telegram_user_id}:{payload.telegram_update_id}"
+            if payload.telegram_update_id
+            else str(uuid.uuid4())
+        )
+        outcome = submit_bet(result.bet, payload.telegram_user_id, idempotency_key, correlation_id)
+        message = get_message(_SUBMIT_OUTCOME_MESSAGE_KEY[outcome], payload.language_code)
+        if outcome in _SUBMIT_OUTCOMES_THAT_CLEAR_STATE:
+            clear_pending(client, payload.telegram_user_id)
+        status = "complete" if outcome in _SUBMIT_SUCCESS_OUTCOMES else "blocked"
+        if status == "blocked":
+            bet = None
 
     return CaptureResponse(
-        status=result.status,
-        message=result.message,
+        status=status,
+        message=message,
         chatId=payload.chat_id,
-        bet=result.bet,
+        bet=bet,
     )
 
 

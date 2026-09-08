@@ -113,10 +113,35 @@
       "dependencies": [
         "feat-003"
       ],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio, sem subagentes (leitura direta de codigo real de 3 repositorios - telegram-integration/api-gateway/bets-service - preferida a um round adversarial nesta escala). Veredito: REVISE, corrigido antes de codificar. Impedimento real resolvido com o usuario ANTES do plan review (AskUserQuestion, registrado em docs/DECISIONS-LOG.md '2026-09-08 - Resolucao de catalogo... no fluxo Telegram'): bets-service exige 4 FKs obrigatorias (bettingHouseId/sportId/leagueId/marketId) em POST /api/v1/bets, mas extraction.py (feat-002) so produz betting_house como nome best-effort - sport/league/market sao sempre None por design. Decidido: bot sempre pergunta sport/league/market por lista numerada (nunca auto-escolhe), betting_house tenta fuzzy match no nome extraido primeiro; catalogo vazio pra algum campo -> bot orienta cadastrar em apps/web primeiro, nao cria a entrada. 2 achados BLOCKER do Plan Review: (1) api-gateway RouteConfig.java so roteava /api/v1/betting-houses, /bets, /transactions - os 3 catalogos usados pra resolver sport/league/market nunca tinham rota, apesar de existirem em bets-service desde a feat-002 daquele servico - corrigido criando e fechando api-gateway feat-007 (rota nova, PRs #24/#25, ver services/api-gateway/feature_list.json) ANTES de iniciar esta feature; (2) CreateBetRequest.betDate e Instant (@NotNull), mas orchestration.py grava bet_date como data pura ISO ('2026-09-08') - Jackson rejeitaria com 400 antes de qualquer validacao de negocio - bets_client.py deve converter pra instante completo (T00:00:00Z) no boundary HTTP, sem mudar o formato ja mostrado ao usuario. 2 achados MAJOR: (3) Idempotency-Key proposto originalmente (hash de odd+stake+telegram_user_id) colide entre duas apostas legitimas com os mesmos valores e nao protege contra o evento real (webhook do Telegram reenviado) - corrigido pra usar o update_id nativo do Telegram (n8n precisa passar esse campo adiante em NormalizedMessage.telegramUpdateId, hoje descartado na normalizacao - ponto novo de risco residual no n8n, mesma classe ja aceita desde feat-001); (4) PendingBet (conversation.py) so modela pergunta de campo livre (awaiting_field/texto) - fase de catalogo precisa de um novo tipo de pergunta (escolha numerada) com snapshot da lista de opcoes buscada naquele turno gravado no Redis, para nao re-buscar o catalogo (que pode mudar entre pergunta e resposta) na hora de validar a resposta numerica. 1 achado MINOR: catalog_client.py precisa paginar ate esgotar (size=100) - o default de 20 itens por pagina esconderia catalogos maiores sem erro. Confirmado no review: reaproveitar o endpoint POST /bets/capture existente (nao criar endpoint novo) e arquiteturalmente correto - o contrato externo (status pending/complete + message) ja generaliza pra 'mais uma pergunta' vs 'concluido', so o estado interno da orquestracao precisa da fase nova. CreateBetRequest tem 6 campos opcionais (ticketNumber/team1/team2/description/betType/playType) que esta feature nao preenche - decisao explicita, nao lacuna.",
+      "jira": "SV-197",
+      "subtasks": [
+        {
+          "id": "feat-004.1",
+          "name": "catalog_client.py (GET paginado sports/leagues/markets/betting-houses via api-gateway) + testes",
+          "status": "done",
+          "jira": "SV-198"
+        },
+        {
+          "id": "feat-004.2",
+          "name": "PendingBet com fase de catalogo (snapshot de opcoes) + orchestration.py (fuzzy match betting_house, pergunta numerada sport/league/market, catalogo vazio) + chaves i18n novas + testes",
+          "status": "done",
+          "jira": "SV-199"
+        },
+        {
+          "id": "feat-004.3",
+          "name": "bets_client.py (POST /api/v1/bets, conversao de bet_date pra Instant, Idempotency-Key via update_id) + n8n (telegramUpdateId) + mapeamento de outcomes + chaves i18n + testes",
+          "status": "done",
+          "jira": "SV-200"
+        },
+        {
+          "id": "feat-004.4",
+          "name": "CHANGELOG, verificacao final e revisao do vault (docs/services/telegram-integration.md, n8n/README.md - risco residual do update_id)",
+          "status": "done",
+          "jira": "SV-201"
+        }
+      ],
       "evidence": ""
     },
     {
@@ -125,6 +150,20 @@
       "description": "Workflow ja versionado em .github/workflows/ci.yml (dentro deste repositorio - este servico e seu proprio repositorio Git, nao um monorepo, ver docs/CI-CD.md) com 5 passos: validacao de CHANGELOG.md atualizado, validacao de chaves de traducao (locales/pt-BR.json, en-US.json, es.json - formato fechado em docs/DECISIONS-LOG.md 2026-08-02), build (uv sync + ruff check), testes unitarios + cobertura (pytest --cov), qualidade/cobertura no SonarCloud (sonar-project.properties, projectKey sv-telegram-integration-backend). Scripts de validacao em .github/scripts/ (duplicados neste repositorio, nao compartilhados). Repositorio GitHub: https://github.com/eimmig/sv-telegram-integration-backend.git. So funciona de fato apos este repositorio existir no GitHub e o setup do SonarCloud (org, projeto, SONAR_TOKEN, SONAR_ORGANIZATION) estar feito - ver docs/CI-CD.md secao 'Setup pendente'.",
       "dependencies": [
         "feat-001"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-006",
+      "name": "Checklist de validacao pre-deploy",
+      "description": "Feature de fechamento final do backlog atual - reune riscos residuais aceitos ao longo de feat-002..004 que so podem ser resolvidos de verdade contra um ambiente real (instancia n8n real, servico containerizado/exposto), nao antes: (1) n8n/telegram-bot.json nunca foi importado numa instancia n8n real - foi montado a mao a partir de documentacao/conhecimento treinado (docs.n8n.io/workflows/export-import retornou 404 durante a pesquisa em feat-001); 7 pontos especificos documentados em n8n/README.md secao 'Risco residual' (expressao {{$binary.data.data}}, schema de conditions do no IF, nomes de parametro do no Telegram, formato values.string do no Set + .split(' ')[1], campo update_id como nivel superior do payload) - importar numa instancia real e corrigir o que divergir antes de qualquer usuario real usar o bot. (2) POST /bets/capture e POST /telegram/link sem autenticacao propria nem limite de tamanho de corpo (aceitavel so enquanto rede local/interna, servico nao containerizado/exposto - feat-002/003) - revisitar ao containerizar. (3) POST /api/v1/telegram-accounts em auth-service (confirmacao de vinculo) sem rate limiting (aceito em telegram-integration feat-003 por TTL curto + espaco de busca grande mitigarem) - revisitar se o servico for exposto alem da rede interna. (4) bet_date default usa UTC, nao horario de Brasilia (possivel off-by-one perto da meia-noite BRT, feat-002.5) - nenhuma convencao de timezone existe no projeto; decidir com o usuario se compensa antes do deploy. Nao inclui: limitacoes de extracao de odd (texto colorido/riscado, layout em coluna) - aceitas como comportamento esperado do fallback conversacional, nao sao bug a corrigir.",
+      "dependencies": [
+        "feat-004",
+        "feat-005"
       ],
       "status": "not-started",
       "plan_review": "",
