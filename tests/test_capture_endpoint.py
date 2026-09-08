@@ -104,3 +104,51 @@ def test_malformed_photo_bytes_do_not_crash_the_service(client: TestClient) -> N
 
     assert response.status_code == 200
     assert response.json()["status"] == "pending"
+
+
+def test_multi_turn_conversation_carries_state_across_separate_requests(client: TestClient) -> None:
+    first = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "endpoint-user-5",
+            "languageCode": "pt-BR",
+            "chatId": "chat-5",
+            "text": "odd 1.85",
+        },
+    )
+    assert first.json()["status"] == "pending"
+    assert first.json()["message"] == "Quanto você apostou (valor em R$)?"
+
+    second = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "endpoint-user-5",
+            "languageCode": "pt-BR",
+            "chatId": "chat-5",
+            "text": "50",
+        },
+    )
+    assert second.json()["status"] == "pending"
+    assert second.json()["message"] == "Em que data você fez essa aposta? (dd/mm/aaaa)"
+
+    third = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "endpoint-user-5",
+            "languageCode": "pt-BR",
+            "chatId": "chat-5",
+            "text": "08/09/2026",
+        },
+    )
+    assert third.json()["status"] == "complete"
+    assert third.json()["bet"] == {
+        "odd": "1.85",
+        "stake": "50",
+        "bet_date": "2026-09-08",
+        "betting_house": None,
+        "sport": None,
+        "league": None,
+        "market": None,
+        "team1": None,
+        "team2": None,
+    }
