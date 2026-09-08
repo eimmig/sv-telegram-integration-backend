@@ -81,7 +81,7 @@
       "dependencies": [
         "feat-002"
       ],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio. Veredito: READY WITH CONCERNS, corrigido antes de codificar. Achado real bloqueante encontrado ANTES do plan review, resolvido com o usuario via AskUserQuestion: api-gateway/RouteConfig.java nao roteia /api/v1/telegram-accounts/** (so /api/v1/telegram-links/**), e ServiceKeyAuthenticationFilter intercepta QUALQUER requisicao com X-Service-Key exigindo X-Telegram-User-Id + lookup de vinculo ja existente - circular pro proprio endpoint que cria o vinculo. Decisao: telegram-integration chama auth-service DIRETO (bypass do api-gateway) pra POST /api/v1/telegram-accounts, mesmo precedente das rotas admin (X-Admin-Api-Key fora da tabela de roteamento). O codigo de vinculo em si (aleatorio 8 chars/32-simbolos, TTL curto, uso unico) e o mecanismo de seguranca desta chamada, nao X-Service-Key. Achado MINOR do Plan Review corrigido no plano: propagar X-Correlation-Id tambem nesta chamada direta (bypassa o Gateway, mas docs/OBSERVABILITY-AND-CONFIG.md manda propagar entre servicos de qualquer forma). Confirmado: 'orientar usuario antes de capturar' da description desta feature e comportamento natural de feat-004 (tratamento do 401 do api-gateway), nao gap desta feature. Rate limiting ausente no endpoint do auth-service aceito como residual (fora de escopo, TTL curto + espaco de busca grande ja mitigam).",
       "jira": "SV-191",
       "subtasks": [
