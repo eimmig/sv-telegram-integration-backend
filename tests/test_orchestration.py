@@ -68,6 +68,72 @@ def test_betting_house_fuzzy_match_skips_the_question(redis_client: redis.Redis)
     assert result.message == "Qual o esporte dessa aposta? Responda com o número da opção:\n1. Futebol"
 
 
+def test_ambiguous_betting_house_match_falls_back_to_the_question(
+    redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two catalog entries that normalize to the same name (case-variant
+    duplicates aren't blocked by bets-service's UNIQUE(name) if it's
+    case-sensitive) must never let the fuzzy match silently pick one - a wrong
+    silent pick here means the bet gets attributed to the wrong betting house.
+    """
+
+    def ambiguous_betting_houses(
+        resource: str, telegram_user_id: str, correlation_id: str
+    ) -> list[CatalogEntry]:
+        if resource == "betting-houses":
+            return [CatalogEntry(id="bh-1", name="Bet365"), CatalogEntry(id="bh-2", name="BET365")]
+        return _stub_fetch_catalog(resource, telegram_user_id, correlation_id)
+
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", ambiguous_betting_houses)
+
+    result = handle_message(
+        redis_client, "user-ambiguous", "pt-BR", "Bet365, odd 1.85, valor R$ 50,00", "corr-1"
+    )
+
+    assert result.status == "pending"
+    assert result.message == (
+        "Não consegui identificar a casa de apostas. Qual das opções abaixo é a certa? "
+        "Responda com o número:\n1. Bet365\n2. BET365"
+    )
+
+
+def test_catalog_answer_resolves_against_the_snapshot_taken_at_question_time(
+    redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The sport list can change between the question and the answer (another
+    conversation registers a new one, or [[web]] edits the catalog) - the
+    numeric reply must resolve against what THIS user was actually shown, not
+    whatever fetch_catalog would return if called again.
+    """
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    asked = handle_message(
+        redis_client, "user-snapshot", "pt-BR", "Bet365, odd 1.85, valor R$ 50,00", "corr-1"
+    )
+    assert asked.message == "Qual o esporte dessa aposta? Responda com o número da opção:\n1. Futebol"
+
+    def changed_sports(resource: str, telegram_user_id: str, correlation_id: str) -> list[CatalogEntry]:
+        if resource == "sports":
+            return [CatalogEntry(id="sp-NEW", name="Basquete"), CatalogEntry(id="sp-1", name="Futebol")]
+        return _stub_fetch_catalog(resource, telegram_user_id, correlation_id)
+
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", changed_sports)
+
+    # Answers "1" - the first option in the snapshot ("Futebol", sp-1), even
+    # though "1" in the now-changed live catalog would mean "Basquete".
+    league_question = handle_message(redis_client, "user-snapshot", "pt-BR", "1", "corr-1")
+    assert league_question.status == "pending"
+    assert league_question.message.startswith("Qual a liga")
+
+    market_question = handle_message(redis_client, "user-snapshot", "pt-BR", "1", "corr-1")
+    assert market_question.status == "pending"
+    assert market_question.message.startswith("Qual o mercado")
+
+    final = handle_message(redis_client, "user-snapshot", "pt-BR", "1", "corr-1")
+    assert final.status == "complete"
+    assert final.bet is not None
+    assert final.bet["sportId"] == "sp-1"
+
+
 def test_full_multi_turn_flow_resolves_every_catalog_and_completes(redis_client: redis.Redis) -> None:
     handle_message(redis_client, "user-d", "pt-BR", "odd 1.85", "corr-1")
     handle_message(redis_client, "user-d", "pt-BR", "50", "corr-1")  # -> asks betting house
