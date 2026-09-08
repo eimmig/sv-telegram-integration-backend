@@ -23,14 +23,17 @@ def test_link_account_maps_every_outcome_to_a_localized_message(
     monkeypatch.setattr("telegram_integration.main.confirm_telegram_link", lambda *_args, **_kwargs: outcome)
 
     response_pt = client.post(
-        "/telegram/link", json={"telegramUserId": "999", "code": "ABCD1234", "languageCode": "pt-BR"}
+        "/telegram/link",
+        json={"telegramUserId": "999", "code": "ABCD1234", "chatId": "111", "languageCode": "pt-BR"},
     )
     response_en = client.post(
-        "/telegram/link", json={"telegramUserId": "999", "code": "ABCD1234", "languageCode": "en"}
+        "/telegram/link",
+        json={"telegramUserId": "999", "code": "ABCD1234", "chatId": "111", "languageCode": "en"},
     )
 
     assert response_pt.status_code == 200
     assert response_pt.json()["message"].startswith(expected_message_pt)
+    assert response_pt.json()["chatId"] == "111"
     assert response_en.status_code == 200
     assert response_en.json()["message"].startswith(expected_message_en)
 
@@ -48,7 +51,9 @@ def test_link_account_passes_telegram_user_id_and_code_to_auth_client(
 
     monkeypatch.setattr("telegram_integration.main.confirm_telegram_link", fake_confirm)
 
-    response = client.post("/telegram/link", json={"telegramUserId": "999", "code": "ABCD1234"})
+    response = client.post(
+        "/telegram/link", json={"telegramUserId": "999", "code": "ABCD1234", "chatId": "111"}
+    )
 
     assert response.status_code == 200
     assert captured["telegram_user_id"] == "999"
