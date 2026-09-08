@@ -5,10 +5,29 @@
       "name": "Setup do projeto Python + webhook n8n",
       "description": "Inicializar projeto Python 3.12+ com uv (pyproject.toml), ruff (lint/format) e mypy configurados (ver docs/CONVENTIONS.md). Fluxo n8n recebendo webhook do Telegram e normalizando o payload em JSON, exportado como arquivo versionado em n8n/. Dicionario de mensagens do bot por locale (pt-BR/en-US/es) selecionado por language_code - ver docs/CONVENTIONS.md secao 'Internacionalizacao'.",
       "dependencies": [],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio, sem subagentes (primeiro servico Python do backlog, risco baixo/medio pela stack nova, mitigado com grounding real via WebSearch/WebFetch e uv real em vez de so conhecimento treinado). Veredito: READY WITH CONCERNS, corrigido antes de codificar. Impedimento real resolvido antes do plano: uv nao estava instalado nesta maquina (docs/CONVENTIONS.md ja decide uv, nao e escolha em aberto) - instalado via 'pip install --user uv' (Scripts global do Python e read-only sem admin) + copiado o executavel pra ~/.local/bin (ja no PATH desta sessao, mesmo mecanismo do gotcha anterior do claude.exe) + PATH do usuario persistido via PowerShell SetEnvironmentVariable (pega em terminais futuros apos reiniciar). Decisao minha, registrada em docs/CONVENTIONS.md no mesmo commit: framework HTTP = FastAPI + Uvicorn (nao Flask/http.server) - type hints nativos (mypy-friendly, ja convencao), validacao automatica via Pydantic pro JSON normalizado vindo do n8n, TestClient sincrono embutido facilita pytest. Grounding: WebSearch/WebFetch confirmaram a estrutura real de export JSON do n8n (nodes[]/connections{} com type/typeVersion/position/parameters, tipo n8n-nodes-base.telegramTrigger pro trigger) - docs oficiais (docs.n8n.io/workflows/export-import) retornaram 404 pra essa pagina especifica, fonte secundaria usada como fallback, residual risco aceito (nao validado contra instancia real de n8n). Achado real corrigido: docs/OBSERVABILITY-AND-CONFIG.md dizia que o /health deste servico verifica conectividade com 'RabbitMQ/n8n', mas nenhuma outra nota sustenta este servico falando com RabbitMQ diretamente (so bets-service/stats-service publicam/consomem eventos) - corrigido na propria nota no mesmo commit, nao e decisao a diferir, e erro de copia. Escopo de feat-001 vs feat-002: fluxo n8n desta feature para antes do no HTTP Request (Telegram Trigger + normalizacao apenas) - a chamada real n8n->Python fica pra feat-002, quando o endpoint de parsing existir. pyproject.toml/uv.lock gerados via 'uv init'/'uv add' reais (versoes resolvidas do PyPI de verdade, nao escritas a mao) - mesmo padrao de start.spring.io usado em api-gateway feat-001.",
+      "jira": "SV-181",
+      "subtasks": [
+        {
+          "id": "feat-001.1",
+          "name": "Bootstrap uv (pyproject.toml/uv.lock reais) + app FastAPI com GET /health + testes",
+          "status": "done",
+          "jira": "SV-182"
+        },
+        {
+          "id": "feat-001.2",
+          "name": "i18n: locales/{pt-BR,en-US,es}.json + loader com fallback + testes",
+          "status": "not-started",
+          "jira": "SV-183"
+        },
+        {
+          "id": "feat-001.3",
+          "name": "n8n/telegram-bot.json (webhook + normalizacao) + correcao do gap RabbitMQ/n8n em OBSERVABILITY-AND-CONFIG.md + CHANGELOG e verificacao final",
+          "status": "not-started",
+          "jira": "SV-184"
+        }
+      ],
       "evidence": ""
     },
     {
