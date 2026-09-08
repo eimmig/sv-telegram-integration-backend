@@ -33,15 +33,40 @@
     {
       "id": "feat-002",
       "name": "Parsing de mensagens nao estruturadas",
-      "description": "Rotina Python que recebe o JSON normalizado do n8n e extrai esporte, liga, mercado, odd, stake, casa de apostas, data, etc. Deve tratar mensagens malformadas sem derrubar o servico.",
+      "description": "Rotina Python que recebe o JSON normalizado do n8n (foto do bilhete OU texto livre - decisao de 2026-09-08, ver docs/DECISIONS-LOG.md, nenhuma nota fixava o formato antes) e extrai esporte, liga, mercado, odd, stake, casa de apostas, data, etc. Quando for foto, roda OCR (Tesseract local via pytesseract - decisao de nao usar API de nuvem, ver docs/DECISIONS-LOG.md) sobre a imagem antes de extrair; extracao heuristica generica sobre o texto resultante (sem template por casa de apostas, sem amostra real disponivel pra validar contra o layout de nenhuma casa - risco residual aceito e registrado). Saida desta feature e literal, nao resolvida: odd/stake/data como valores tipados extraidos com confianca, esporte/liga/mercado/casa de apostas/times como STRINGS BRUTAS best-effort (nao IDs) - bets-service espera UUID de catalogo (bettingHouseId/sportId/leagueId/marketId), e resolver nome->ID (fuzzy match contra o catalogo do tenant, decidir o que fazer se nao existir) e complexidade propria de feat-004 (integracao com POST /api/v1/bets), achado real do Plan Review, nao desta feature. Campo nao extraido com confianca faz o bot perguntar ao usuario diretamente, um de cada vez (fallback conversacional) - estado da conversa guardado no Redis ja provisionado em infra/ (mesma instancia de stats-service, chave por telegramUserId, TTL curto). Deve tratar mensagens/imagens malformadas sem derrubar o servico. n8n/telegram-bot.json (feat-001) precisa ser estendido: no Telegram (get/download file, reaproveita a credencial ja configurada no Trigger) baixa a foto quando for esse o tipo de mensagem e passa como base64 pro endpoint Python - o Python nunca recebe nem guarda o token do bot (fica so no n8n), achado real do Plan Review (plano original cogitava o Python baixar via Telegram Bot API direto, exigindo um segredo novo aqui sem necessidade).",
       "dependencies": [
         "feat-001"
       ],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
-      "evidence": ""
+      "status": "done",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio, sem subagentes. Veredito: READY WITH CONCERNS, corrigido antes de codificar. Contexto: formato de mensagem (foto do bilhete OU texto livre) e motor de OCR (Tesseract local, nao nuvem) decididos com o usuario via AskUserQuestion antes deste plan review (nenhuma nota fixava isso, ver docs/DECISIONS-LOG.md 2026-09-08) - sem amostra real de bilhete disponivel, extracao e heuristica generica aceita como risco residual pelo proprio usuario ('caso ache isso demais, pode usar o modelo bot pergunta'). Achado real MAJOR: bets-service espera IDs de catalogo (bettingHouseId/sportId/leagueId/marketId - UUID), nao nomes - OCR/texto so produz nomes. Corrigido: escopo desta feature reduzido pra produzir campos literais tipados (odd/stake/data) + strings brutas best-effort pros demais (nao IDs) - resolucao nome->catalogo e complexidade de feat-004, nao empurrada indevidamente pra ca. Achado real MAJOR: plano original cogitava o proprio Python baixar a foto via Telegram Bot API (getFile), exigindo TELEGRAM_BOT_TOKEN como segredo novo neste servico - corrigido pra n8n baixar (ja tem a credencial do Telegram configurada no Trigger desde feat-001) e passar a imagem em base64 pro endpoint Python, que nunca ve o token do bot - mantem n8n como unico dono de credencial do Telegram, mesmo principio de separacao ja usado em feat-001. Achado real MINOR: testes do estado de conversa (Redis) devem usar testcontainers real (mesmo padrao ja usado nos 3 servicos Java pra Postgres/RabbitMQ - Testcontainers, ver docs/TESTING.md), nao fakeredis (reimplementacao em memoria pode divergir do Redis real) - `testcontainers[redis]` tem modulo dedicado. Teste de OCR com imagem sintetica (Pillow renderizando texto conhecido) aceito como suficiente dado que nao ha bilhete real disponivel - mesma logica de residual risk ja registrada.",
+      "jira": "SV-185",
+      "subtasks": [
+        {
+          "id": "feat-002.1",
+          "name": "Cliente Redis + modulo de estado de conversa (get/set/clear, TTL) + testes com testcontainers",
+          "status": "done",
+          "jira": "SV-186"
+        },
+        {
+          "id": "feat-002.2",
+          "name": "Modulo OCR (pytesseract) + modulo de extracao heuristica (odd/stake/data tipados, nomes brutos best-effort) + testes",
+          "status": "done",
+          "jira": "SV-187"
+        },
+        {
+          "id": "feat-002.3",
+          "name": "Endpoint FastAPI de orquestracao (funde extracao + estado pendente, pergunta campo faltante ou retorna completo) + chaves i18n novas + extensao do n8n workflow (download de foto) + testes",
+          "status": "done",
+          "jira": "SV-188"
+        },
+        {
+          "id": "feat-002.4",
+          "name": "CHANGELOG e verificacao final",
+          "status": "done",
+          "jira": "SV-189"
+        }
+      ],
+      "evidence": "Fechada em 2026-09-08 - 4 subtasks (SV-186..189, story SV-185) done, 4 PRs de subtask (#5, #6, #7, #8) com CI real e verde (Redis via testcontainers e Tesseract instalado no runner, rodando de verdade, nao guarda pulada). Impedimento real resolvido antes de codificar: formato de mensagem (foto do bilhete OU texto livre) e motor de OCR (Tesseract local, nao API de nuvem) nao estavam decididos em nenhuma nota - resolvido com o usuario via AskUserQuestion, registrado em docs/DECISIONS-LOG.md. conversation.py (estado de conversa no Redis ja provisionado em infra/, TTL 15min) + ocr.py (pytesseract por+eng, nunca lanca excecao) + extraction.py (odd/stake/bet_date com padrao lexico universal, betting_house por lista curta de casas conhecidas, sport/league/market/teams sempre None - sem amostra real pra validar, documentado como nao tentado em vez de fingir robustez) + orchestration.py (funde extracao com estado pendente, pergunta o primeiro campo obrigatorio faltante) + main.py (POST /bets/capture). n8n/telegram-bot.json estendido (IF ramifica foto/texto, Telegram baixa a foto reaproveitando a credencial do Trigger - Python nunca ve o token do bot, HTTP Request chama o endpoint novo, Telegram sendMessage responde ao usuario). 2 achados reais MAJOR do Plan Review corrigidos antes de codificar: escopo reduzido pra nao resolver nomes extraidos contra o catalogo de bets-service (que exige UUID, nao nome - fica pra feat-004); download de foto movido pro n8n em vez do Python (evita TELEGRAM_BOT_TOKEN como segredo novo aqui). 2 achados reais encontrados durante a implementacao/revisao, corrigidos antes de fechar: caminho de resposta direta a uma pergunta armazenava texto cru sem normalizar (data em formato errado) - corrigido com parse_direct_answer; Delivery Reviewer encontrou dict de campos esparso no fluxo multi-turno (formato inconsistente com extracao de mensagem unica) - corrigido em _merge, pego por um teste novo ponta a ponta pela HTTP real (nao so pela funcao de orquestracao direto). Test Suite Auditor: PASS. 45 testes, 0 falhas, cobertura 100% (gate 80%). ./init.sh do servico e da raiz verdes. Residuais aceitos, documentados: n8n/README.md lista 4 pontos do workflow nao validados contra instancia real; endpoint POST /bets/capture sem autenticacao propria (rede local/interna, servico nao containerizado/exposto ainda) nem limite de tamanho de corpo pro base64 da foto - aceitavel no estagio atual, revisitar quando containerizado. Libera feat-003 (vinculo de conta Telegram); epic-005 (raiz) continua in-progress ate feat-003..005 tambem fecharem."
     },
     {
       "id": "feat-003",

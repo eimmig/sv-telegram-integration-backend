@@ -1,3 +1,7 @@
 {
-  "generic_error": "Ocorreu um erro. Tente novamente mais tarde."
+  "generic_error": "Ocorreu um erro. Tente novamente mais tarde.",
+  "ask_odd": "Qual foi a odd dessa aposta?",
+  "ask_stake": "Quanto você apostou (valor em R$)?",
+  "ask_bet_date": "Em que data você fez essa aposta? (dd/mm/aaaa)",
+  "bet_captured": "Captura concluída até aqui. O restante do cadastro continua em breve."
 }
