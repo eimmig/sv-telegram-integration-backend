@@ -3,7 +3,8 @@
 ## Estado Atual (Current State)
 
 **Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001`/`feat-002` `done`; `feat-003` é a próxima elegível)
+**Feature ativa:** nenhuma (`feat-001`/`feat-002`/`feat-003` `done`; `feat-004` e `feat-005` são
+as próximas elegíveis, `feat-004` primeiro por ordem de dependência)
 
 ## Status
 
@@ -11,6 +12,9 @@
 
 - [x] Harness deste serviço criado.
 - [x] `feat-001` (Setup do projeto Python + webhook n8n) — `done` em 2026-09-08.
+- [x] `feat-002` (Parsing de mensagens não estruturadas, + `feat-002.5` correção pós-fechamento)
+      — `done` em 2026-09-08.
+- [x] `feat-003` (RF05 suporte — fluxo de vínculo de conta Telegram) — `done` em 2026-09-08.
 
 ### Em andamento
 
@@ -18,7 +22,10 @@
 
 ### Próximos passos (Next Steps)
 
-1. `feat-002` (Parsing de mensagens não estruturadas) — única feature elegível agora.
+1. `feat-004` (RF05 — integração com `POST /api/v1/bets` via `api-gateway`) — depende de
+   `feat-003`, já `done`.
+2. `feat-005` (Pipeline de CI) — depende só de `feat-001`, já elegível em paralelo, mas
+   convencionalmente fechada por último (feature de fechamento formal do backlog).
 
 ## `feat-001` fechada — bootstrap uv + FastAPI + i18n + n8n (2026-09-08)
 
@@ -171,13 +178,53 @@ Brasília (possível off-by-one perto da meia-noite BRT) — aceito, nenhuma con
 existe no projeto pra violar. 1 subtask (SV-190), 1 PR de subtask (#10) + 1 PR de story (#11,
 `feature -> develop`), CI + SonarCloud verdes. 45 testes, 0 falhas, cobertura 100%.
 
+## `feat-003` fechada — fluxo de vínculo de conta Telegram (2026-09-08)
+
+Achado bloqueante real encontrado **antes** de codificar (não no Plan Review): lendo o código de
+`api-gateway` de verdade nesta sessão, `RouteConfig.java` não roteia `/api/v1/telegram-accounts/**`
+(só `/api/v1/telegram-links/**`), e `ServiceKeyAuthenticationFilter` intercepta qualquer
+requisição com `X-Service-Key` exigindo `X-Telegram-User-Id` + lookup de vínculo **já
+confirmado** — circular pro próprio endpoint que cria o vínculo. Resolvido com o usuário via
+`AskUserQuestion` (2 opções: bypass do Gateway vs. estender `api-gateway`) — escolhido bypass:
+`telegram-integration` chama `auth-service` **direto** pra `POST /api/v1/telegram-accounts`,
+mesmo precedente das rotas admin (`X-Admin-Api-Key` fora da tabela de roteamento). Decisão
+registrada em `../../docs/DECISIONS-LOG.md` (2026-09-08) e `../../docs/API-CONTRACTS.md` (novo
+bullet em "Confiança entre serviços").
+
+**Módulos novos**: `auth_client.py` (mapeia 201/404/422/409/outros do `auth-service` pra
+`LinkOutcome`, propaga `X-Correlation-Id` mesmo bypassando o Gateway — achado MINOR do Plan
+Review). Endpoint `POST /telegram/link` em `main.py` (sempre 200, mensagem localizada, mesmo
+padrão de `/bets/capture`) + 4 chaves i18n novas (`link_success`/`link_code_invalid`/
+`link_code_expired`/`link_already_linked`) nos 3 locales. `n8n/telegram-bot.json` estendido: novo
+nó `IF` "Is /vincular command?" logo após o Trigger, ramificando pro fluxo de vínculo antes do
+fluxo de captura existente — `Has photo?` em diante permanece byte-a-byte idêntico
+estruturalmente (verificado no Delivery Reviewer, sem regressão).
+
+Confirmado no Plan Review: "orientar usuário antes de capturar" (texto da `description` original
+da feature) é comportamento natural de `feat-004` (tratamento do `401` do `api-gateway`, já
+explícito na própria `description` de `feat-004`) — não é gap desta feature, `feat-002`
+(`/bets/capture`) nunca chamou `bets-service` de verdade, então não havia nada a "orientar antes
+de" ainda.
+
+3 subtasks (SV-192..194, story SV-191), 3 PRs de subtask (#12, #13, #14) + 1 PR de story (#15,
+`feature -> develop`), todos com CI real e verde, SonarCloud verde de primeira. Delivery
+Reviewer: PASS, 1 achado P3 não bloqueante (`code` sem validação de não-vazio no endpoint novo,
+consistente com a soltura já existente em `NormalizedMessage` — aceito). Test Suite Auditor:
+PASS. 58 testes, 0 falhas, cobertura 99.57% (gate 80%). `./init.sh` do serviço e da raiz verdes.
+Libera `feat-004` (integração com `POST /api/v1/bets`); `epic-005` (raiz) continua `in-progress`
+até `feat-004`/`feat-005` também fecharem.
+
 ## Bloqueios / Riscos
 
-- Nenhum aberto. `n8n/telegram-bot.json` tem 4 pontos não validados contra instância real,
-  documentados em `n8n/README.md` — não bloqueante, revisitar antes de produção.
-- `POST /bets/capture` sem autenticação própria nem limite de tamanho de corpo pro base64 da
-  foto — aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto),
-  revisitar quando containerizado.
+- Nenhum aberto. `n8n/telegram-bot.json` tem 6 pontos não validados contra instância real
+  (2 novos de `feat-003`: `operation: "startsWith"` do nó `IF` novo, e o contexto de expressão em
+  torno de `.split(" ")[1]` no nó `Set` novo), documentados em `n8n/README.md` — não bloqueante,
+  revisitar antes de produção.
+- `POST /bets/capture` e `POST /telegram/link` sem autenticação própria nem limite de tamanho de
+  corpo — aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto),
+  revisitar quando containerizado. `POST /telegram/link` também sem rate limiting no lado
+  `auth-service` (risco residual aceito em `feat-003`, mitigado por TTL curto + espaço de busca
+  grande do código de vínculo).
 
 ## Harness criado (2026-07-30)
 
