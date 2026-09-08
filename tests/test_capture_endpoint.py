@@ -1,6 +1,7 @@
 import base64
 import io
 from collections.abc import Iterator
+from datetime import UTC, datetime
 
 import pytest
 import redis
@@ -61,7 +62,7 @@ def test_returns_complete_when_text_has_everything(client: TestClient) -> None:
             "telegramUserId": "endpoint-user-2",
             "languageCode": "pt-BR",
             "chatId": "chat-2",
-            "text": "Bet365, odd 1.85, valor R$ 50,00, em 08/09/2026",
+            "text": "Bet365, odd 1.85, valor R$ 50,00",
         },
     )
 
@@ -69,7 +70,8 @@ def test_returns_complete_when_text_has_everything(client: TestClient) -> None:
     assert body["status"] == "complete"
     assert body["bet"]["odd"] == "1.85"
     assert body["bet"]["stake"] == "50.00"
-    assert body["bet"]["bet_date"] == "2026-09-08"
+    # Not extracted from text (see extraction.py) - always defaults to today.
+    assert body["bet"]["bet_date"] == datetime.now(UTC).date().isoformat()
 
 
 def test_extracts_from_a_photo_via_ocr(client: TestClient) -> None:
@@ -128,23 +130,11 @@ def test_multi_turn_conversation_carries_state_across_separate_requests(client: 
             "text": "50",
         },
     )
-    assert second.json()["status"] == "pending"
-    assert second.json()["message"] == "Em que data você fez essa aposta? (dd/mm/aaaa)"
-
-    third = client.post(
-        "/bets/capture",
-        json={
-            "telegramUserId": "endpoint-user-5",
-            "languageCode": "pt-BR",
-            "chatId": "chat-5",
-            "text": "08/09/2026",
-        },
-    )
-    assert third.json()["status"] == "complete"
-    assert third.json()["bet"] == {
+    assert second.json()["status"] == "complete"
+    assert second.json()["bet"] == {
         "odd": "1.85",
         "stake": "50",
-        "bet_date": "2026-09-08",
+        "bet_date": datetime.now(UTC).date().isoformat(),
         "betting_house": None,
         "sport": None,
         "league": None,

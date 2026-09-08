@@ -8,6 +8,7 @@ the raw extracted/collected fields (see extraction.py's module docstring).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Literal
 
 import redis
@@ -19,7 +20,6 @@ from telegram_integration.i18n import get_message
 _QUESTION_KEYS = {
     "odd": "ask_odd",
     "stake": "ask_stake",
-    "bet_date": "ask_bet_date",
 }
 
 
@@ -67,6 +67,13 @@ def handle_message(
         save_pending(client, telegram_user_id, PendingBet(fields=fields, awaiting_field=next_field))
         question = get_message(_QUESTION_KEYS[next_field], language_code)
         return CaptureResult(status="pending", message=question, bet=None)
+
+    if fields.get("bet_date") is None:
+        # Not extracted from text on purpose (see extraction.py's module
+        # docstring) - a bet-slip normally shows the event's date, not
+        # necessarily when the bet was placed, and today is right far more
+        # often than a guess from the slip would be.
+        fields["bet_date"] = datetime.now(UTC).date().isoformat()
 
     clear_pending(client, telegram_user_id)
     confirmation = get_message("bet_captured", language_code)

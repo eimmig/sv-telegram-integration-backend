@@ -2,6 +2,5 @@
   "generic_error": "Something went wrong. Please try again later.",
   "ask_odd": "What was the odd on that bet?",
   "ask_stake": "How much did you stake?",
-  "ask_bet_date": "What date did you place this bet? (mm/dd/yyyy)",
   "bet_captured": "Captured what we could so far. The rest of the registration is coming soon."
 }
