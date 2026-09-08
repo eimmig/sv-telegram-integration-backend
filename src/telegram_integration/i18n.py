@@ -24,9 +24,9 @@ def resolve_locale(language_code: str | None) -> str:
     """
     if not language_code:
         return DEFAULT_LOCALE
-    prefix = language_code.strip().lower()[:2]
+    subtag = language_code.strip().lower().split("-")[0]
     for locale in SUPPORTED_LOCALES:
-        if locale.lower().startswith(prefix):
+        if locale.lower().split("-")[0] == subtag:
             return locale
     return DEFAULT_LOCALE
 
