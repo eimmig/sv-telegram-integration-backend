@@ -94,7 +94,7 @@
         {
           "id": "feat-003.2",
           "name": "Endpoint POST /telegram/link + chaves i18n novas + testes (5 outcomes x locales)",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-193"
         },
         {
