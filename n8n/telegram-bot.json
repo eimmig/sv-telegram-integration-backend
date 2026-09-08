@@ -19,11 +19,75 @@
       }
     },
     {
+      "id": "is-link-command",
+      "name": "Is /vincular command?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "string": [
+            {
+              "value1": "={{$json[\"message\"][\"text\"] || \"\"}}",
+              "operation": "startsWith",
+              "value2": "/vincular "
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "normalize-link-payload",
+      "name": "Normalize link payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [680, 480],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "telegramUserId",
+              "value": "={{$json[\"message\"][\"from\"][\"id\"]}}"
+            },
+            {
+              "name": "languageCode",
+              "value": "={{$json[\"message\"][\"from\"][\"language_code\"]}}"
+            },
+            {
+              "name": "chatId",
+              "value": "={{$json[\"message\"][\"chat\"][\"id\"]}}"
+            },
+            {
+              "name": "code",
+              "value": "={{$json[\"message\"][\"text\"].split(\" \")[1]}}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "confirm-link",
+      "name": "Confirm link (Python)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 480],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/telegram/link",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"code\": $json.code } }}",
+        "options": {}
+      }
+    },
+    {
       "id": "has-photo",
       "name": "Has photo?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [460, 300],
+      "position": [680, 300],
       "parameters": {
         "conditions": {
           "boolean": [],
@@ -155,7 +219,47 @@
       "main": [
         [
           {
+            "node": "Is /vincular command?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is /vincular command?": {
+      "main": [
+        [
+          {
+            "node": "Normalize link payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Has photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize link payload": {
+      "main": [
+        [
+          {
+            "node": "Confirm link (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm link (Python)": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
             "type": "main",
             "index": 0
           }

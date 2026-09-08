@@ -100,11 +100,11 @@
         {
           "id": "feat-003.3",
           "name": "n8n (roteamento /vincular) + docs (telegram-integration.md, API-CONTRACTS.md, DECISIONS-LOG.md) + CHANGELOG e verificacao final",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-194"
         }
       ],
-      "evidence": ""
+      "evidence": "3 subtasks (SV-192..194, story SV-191) done, 3 PRs de subtask (#12, #13, subtask/SV-194 ainda em aberto no momento desta escrita) com CI real e verde. auth_client.py chama POST /api/v1/telegram-accounts direto no auth-service (bypass do api-gateway, achado real: RouteConfig nao roteia /api/v1/telegram-accounts/** e ServiceKeyAuthenticationFilter e circular pro endpoint que cria o vinculo - decisao tomada com o usuario via AskUserQuestion, registrada em docs/DECISIONS-LOG.md 2026-09-08), mapeia 201/404/422/409/outros para LinkOutcome, propaga X-Correlation-Id. Endpoint POST /telegram/link sempre 200 com mensagem localizada (mesmo padrao de /bets/capture), 4 chaves i18n novas nos 3 locales. n8n/telegram-bot.json estendido (novo no IF 'Is /vincular command?' logo apos o Trigger, ramifica pro fluxo de vinculo sem alterar a logica interna do fluxo de captura existente). Plan Reviewer (READY WITH CONCERNS, corrigido antes de codificar) e achado bloqueante real resolvido com o usuario antes mesmo do plan review (bypass do gateway). Delivery Reviewer: PASS, 1 achado P3 nao bloqueante (code sem validacao de nao-vazio no endpoint novo, consistente com a soltura ja existente em NormalizedMessage, aceito como residual). Test Suite Auditor: PASS, testes provam mapeamento de negocio real (status HTTP-outcome, outcome-mensagem localizada), nao triviais. 58 testes, 0 falhas, cobertura 99.57% (gate 80%). ./init.sh do servico e da raiz verdes. Docs atualizados no mesmo commit: docs/services/telegram-integration.md (secao 'Vinculo de conta'), docs/API-CONTRACTS.md (novo bullet 'Confianca entre servicos'), docs/DECISIONS-LOG.md (nova entrada). Libera feat-004 (integracao com POST /api/v1/bets)."
     },
     {
       "id": "feat-004",

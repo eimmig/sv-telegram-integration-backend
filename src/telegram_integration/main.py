@@ -56,11 +56,15 @@ class LinkAccountRequest(BaseModel):
 
     telegram_user_id: str = Field(alias="telegramUserId")
     language_code: str | None = Field(default=None, alias="languageCode")
+    chat_id: str = Field(alias="chatId")
     code: str
 
 
 class LinkAccountResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     message: str
+    chat_id: str = Field(alias="chatId")
 
 
 @app.get("/health")
@@ -93,4 +97,5 @@ def link_account(payload: LinkAccountRequest) -> LinkAccountResponse:
     correlation_id = str(uuid.uuid4())
     outcome = confirm_telegram_link(payload.telegram_user_id, payload.code, correlation_id)
     message_key = _LINK_OUTCOME_MESSAGE_KEY[outcome]
-    return LinkAccountResponse(message=get_message(message_key, payload.language_code))
+    message = get_message(message_key, payload.language_code)
+    return LinkAccountResponse(message=message, chatId=payload.chat_id)
