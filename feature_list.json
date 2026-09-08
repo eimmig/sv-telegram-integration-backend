@@ -5,11 +5,30 @@
       "name": "Setup do projeto Python + webhook n8n",
       "description": "Inicializar projeto Python 3.12+ com uv (pyproject.toml), ruff (lint/format) e mypy configurados (ver docs/CONVENTIONS.md). Fluxo n8n recebendo webhook do Telegram e normalizando o payload em JSON, exportado como arquivo versionado em n8n/. Dicionario de mensagens do bot por locale (pt-BR/en-US/es) selecionado por language_code - ver docs/CONVENTIONS.md secao 'Internacionalizacao'.",
       "dependencies": [],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
-      "evidence": ""
+      "status": "done",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio, sem subagentes (primeiro servico Python do backlog, risco baixo/medio pela stack nova, mitigado com grounding real via WebSearch/WebFetch e uv real em vez de so conhecimento treinado). Veredito: READY WITH CONCERNS, corrigido antes de codificar. Impedimento real resolvido antes do plano: uv nao estava instalado nesta maquina (docs/CONVENTIONS.md ja decide uv, nao e escolha em aberto) - instalado via 'pip install --user uv' (Scripts global do Python e read-only sem admin) + copiado o executavel pra ~/.local/bin (ja no PATH desta sessao, mesmo mecanismo do gotcha anterior do claude.exe) + PATH do usuario persistido via PowerShell SetEnvironmentVariable (pega em terminais futuros apos reiniciar). Decisao minha, registrada em docs/CONVENTIONS.md no mesmo commit: framework HTTP = FastAPI + Uvicorn (nao Flask/http.server) - type hints nativos (mypy-friendly, ja convencao), validacao automatica via Pydantic pro JSON normalizado vindo do n8n, TestClient sincrono embutido facilita pytest. Grounding: WebSearch/WebFetch confirmaram a estrutura real de export JSON do n8n (nodes[]/connections{} com type/typeVersion/position/parameters, tipo n8n-nodes-base.telegramTrigger pro trigger) - docs oficiais (docs.n8n.io/workflows/export-import) retornaram 404 pra essa pagina especifica, fonte secundaria usada como fallback, residual risco aceito (nao validado contra instancia real de n8n). Achado real corrigido: docs/OBSERVABILITY-AND-CONFIG.md dizia que o /health deste servico verifica conectividade com 'RabbitMQ/n8n', mas nenhuma outra nota sustenta este servico falando com RabbitMQ diretamente (so bets-service/stats-service publicam/consomem eventos) - corrigido na propria nota no mesmo commit, nao e decisao a diferir, e erro de copia. Escopo de feat-001 vs feat-002: fluxo n8n desta feature para antes do no HTTP Request (Telegram Trigger + normalizacao apenas) - a chamada real n8n->Python fica pra feat-002, quando o endpoint de parsing existir. pyproject.toml/uv.lock gerados via 'uv init'/'uv add' reais (versoes resolvidas do PyPI de verdade, nao escritas a mao) - mesmo padrao de start.spring.io usado em api-gateway feat-001.",
+      "jira": "SV-181",
+      "subtasks": [
+        {
+          "id": "feat-001.1",
+          "name": "Bootstrap uv (pyproject.toml/uv.lock reais) + app FastAPI com GET /health + testes",
+          "status": "done",
+          "jira": "SV-182"
+        },
+        {
+          "id": "feat-001.2",
+          "name": "i18n: locales/{pt-BR,en-US,es}.json + loader com fallback + testes",
+          "status": "done",
+          "jira": "SV-183"
+        },
+        {
+          "id": "feat-001.3",
+          "name": "n8n/telegram-bot.json (webhook + normalizacao) + correcao do gap RabbitMQ/n8n em OBSERVABILITY-AND-CONFIG.md + CHANGELOG e verificacao final",
+          "status": "done",
+          "jira": "SV-184"
+        }
+      ],
+      "evidence": "Fechada em 2026-09-08 - 3 subtasks (SV-182..184, story SV-181) done, 3 PRs de subtask (#1, #2, #3) com CI real e verde (uv sync + ruff + mypy + pytest --cov rodando de verdade no runner, nao guarda pulada). Primeiro servico Python do backlog: pyproject.toml/uv.lock gerados via uv init/uv add reais (versoes resolvidas do PyPI, nao escritas a mao, mesmo padrao de start.spring.io usado em api-gateway feat-001), FastAPI+Uvicorn como framework HTTP (decisao registrada em docs/CONVENTIONS.md), GET /health prova o app de pe, i18n (locales/{pt-BR,en-US,es}.json + resolve_locale/get_message, uma chave real generic_error) prova o mecanismo ponta a ponta, n8n/telegram-bot.json (Telegram Trigger + normalizacao) exportado parando propositalmente antes do no HTTP Request (fica pra feat-002). Impedimento real resolvido antes de codificar: uv nao instalado nesta maquina, corrigido via pip install --user + copia pra ~/.local/bin. 2 achados reais de sequenciamento de CI corrigidos rodando os PRs de verdade (nao especulados): passo de i18n guardado so por pyproject.toml quebraria a subtask de bootstrap - corrigido pra guarda por locales/pt-BR.json; passo de changelog rodando em todo PR (nao so story->develop) quebrou de verdade a PR da subtask 2 - corrigido pra guarda por base_ref, mesmo padrao ja documentado em docs/CI-CD.md e usado nos outros 6 repositorios, nunca portado pra este ate agora. Achado real de documentacao corrigido: docs/OBSERVABILITY-AND-CONFIG.md dizia que o /health verifica RabbitMQ/n8n - nenhuma nota sustentava isso, corrigido. Delivery Reviewer (passe proprio): PASS, 1 achado real corrigido antes de fechar - resolve_locale usava startswith (um language_code de 1 caractere como \"e\" casava por acidente com en-US) - corrigido pra comparacao exata do subtag de idioma. Test Suite Auditor: PASS - testes provam mapeamento de locale real (parametrizado, casos de fallback), nenhum teste trivial. Achado real do SonarCloud no PR story->develop (#4, primeira analise de verdade deste repositorio): Security Rating E em \"Avoid binding the application to all network interfaces\" - o entrypoint de dev main() (uvicorn.run) usava host=\"0.0.0.0\"; corrigido pra \"127.0.0.1\" (bind em todas as interfaces so faz sentido num deploy real via Dockerfile/container, decisao de infra futura, nao deste script de conveniencia local). 12 testes, 0 falhas, cobertura 100% (gate 80%). ./init.sh do servico e da raiz verdes. n8n/README.md documenta risco residual aceito (workflow nao validado contra instancia real de n8n). Libera feat-002 (parsing de mensagens); epic-005 (raiz) continua in-progress ate feat-002..005 tambem fecharem."
     },
     {
       "id": "feat-002",
