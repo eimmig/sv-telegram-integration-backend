@@ -3,7 +3,7 @@
 ## Estado Atual (Current State)
 
 **Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001` `done`; `feat-002` é a próxima elegível)
+**Feature ativa:** nenhuma (`feat-001`/`feat-002` `done`; `feat-003` é a próxima elegível)
 
 ## Status
 
@@ -133,6 +133,43 @@ o mais incerto).
 o wrapper `pip` estava sendo instalado antes, não o motor de OCR em si) e Redis via
 `testcontainers` rodando de verdade no CI, não só localmente. SonarCloud verde de primeira. 45
 testes, 0 falhas, cobertura 100% (gate 80%). `./init.sh` do serviço e da raiz verdes.
+
+## `feat-002.5` — extração validada contra 5 bilhetes reais (2026-09-08, reabertura no mesmo dia)
+
+Usuário forneceu 5 capturas reais de bilhetes de casas de apostas brasileiras (Bet365 e mais 4,
+não commitadas no repo — dados de aposta/financeiro, mantidas só na máquina local). Rodei OCR de
+verdade (`pytesseract`, não só leitura visual) + `extract_fields` contra as 5 — 2 achados reais
+confirmados e corrigidos:
+
+1. **Odd podia capturar um valor de moeda em vez da odd real** — "Valor Total R$2.50" (stake)
+   vencia a odd real "5.50" por aparecer antes no texto (o bare-scan de odd não excluía números
+   prefixados por R$/$). Corrigido excluindo valores de moeda do escaneio de odd antes de buscar.
+2. **`bet_date` era extraído de qualquer padrão dd/mm/aaaa no texto, mas o bilhete normalmente
+   mostra a data do EVENTO, não da aposta** (2 dos 5 bilhetes reais confirmam isso — ex.:
+   "Dortmund x Villarreal 08/09/26" é a data do jogo). Dado errado silencioso é pior que campo
+   ausente — removido por completo; `orchestration.py` agora sempre usa a data de hoje (servidor)
+   quando `bet_date` não vem de outra fonte, e o campo saiu de `REQUIRED_FIELDS` (nunca mais
+   perguntado ao usuário).
+
+Testado também `--psm 6` do Tesseract como alternativa — resolveria o reordenamento de layout em
+coluna e a perda do ponto decimal em 2 dos 5 bilhetes, mas piorou silenciosamente o stake de
+outro bilhete (R$2,50 virou "R$250" sem separador — erro de 100x no valor). Risco assimétrico
+(dado errado silencioso é pior que uma pergunta extra) — mantido o `psm` padrão, documentado como
+limitação aceita em vez de perseguida com mais regex.
+
+Resultado final contra as 5 amostras reais, ponta a ponta (OCR + extração): **stake correto 5/5**,
+**odd correto 2/5** (Bet365 e um bilhete genérico) com os outros 3/5 (Betano, Novibet, Vupi)
+caindo com segurança no fallback conversacional em vez de capturar um valor errado — a odd em
+texto colorido/riscado (boost) do Betano vira lixo na OCR, o Novibet perde o símbolo `@` e o
+ponto decimal, o Vupi tem layout em coluna que a OCR reordena e também perde o decimal
+especificamente no valor da odd (os valores em R$ do mesmo bilhete saíram corretos). Isso não é
+regressão — é o design já combinado com o usuário (heurística genérica + pergunta quando incerto)
+funcionando como esperado diante de casos genuinamente difíceis.
+
+Delivery Reviewer: PASS — 1 achado residual menor: `bet_date` usa data UTC, não horário de
+Brasília (possível off-by-one perto da meia-noite BRT) — aceito, nenhuma convenção de timezone
+existe no projeto pra violar. 1 subtask (SV-190), 1 PR de subtask (#10) + 1 PR de story (#11,
+`feature -> develop`), CI + SonarCloud verdes. 45 testes, 0 falhas, cobertura 100%.
 
 ## Bloqueios / Riscos
 
