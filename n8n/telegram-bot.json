@@ -19,11 +19,78 @@
       }
     },
     {
-      "id": "normalize-payload",
-      "name": "Normalize payload",
-      "type": "n8n-nodes-base.set",
+      "id": "has-photo",
+      "name": "Has photo?",
+      "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [460, 300],
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "string": [
+            {
+              "value1": "={{$json[\"message\"][\"photo\"] ? \"yes\" : \"no\"}}",
+              "value2": "yes"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-photo-file",
+      "name": "Get photo file",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 200],
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "fileId": "={{$json[\"message\"][\"photo\"][$json[\"message\"][\"photo\"].length - 1][\"file_id\"]}}",
+        "download": true
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot (StakeVault)"
+        }
+      }
+    },
+    {
+      "id": "normalize-photo-payload",
+      "name": "Normalize photo payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [900, 200],
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "telegramUserId",
+              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"id\"]}}"
+            },
+            {
+              "name": "languageCode",
+              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"language_code\"]}}"
+            },
+            {
+              "name": "chatId",
+              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}"
+            },
+            {
+              "name": "photoBase64",
+              "value": "={{$binary.data.data}}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "normalize-text-payload",
+      "name": "Normalize text payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [680, 400],
       "parameters": {
         "values": {
           "string": [
@@ -47,6 +114,40 @@
         },
         "options": {}
       }
+    },
+    {
+      "id": "capture-bet",
+      "name": "Capture bet (Python)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/bets/capture",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"text\": $json.text, \"photoBase64\": $json.photoBase64 } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-reply",
+      "name": "Send reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1340, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{$json[\"chatId\"]}}",
+        "text": "={{$json[\"message\"]}}"
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot (StakeVault)"
+        }
+      }
     }
   ],
   "connections": {
@@ -54,7 +155,69 @@
       "main": [
         [
           {
-            "node": "Normalize payload",
+            "node": "Has photo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has photo?": {
+      "main": [
+        [
+          {
+            "node": "Get photo file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalize text payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get photo file": {
+      "main": [
+        [
+          {
+            "node": "Normalize photo payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize photo payload": {
+      "main": [
+        [
+          {
+            "node": "Capture bet (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize text payload": {
+      "main": [
+        [
+          {
+            "node": "Capture bet (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capture bet (Python)": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
             "type": "main",
             "index": 0
           }

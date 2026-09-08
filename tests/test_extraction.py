@@ -1,4 +1,4 @@
-from telegram_integration.extraction import ExtractedBet, extract_fields
+from telegram_integration.extraction import ExtractedBet, extract_fields, parse_direct_answer
 
 
 def test_extracts_odd_near_the_odd_keyword() -> None:
@@ -63,3 +63,29 @@ def test_missing_required_fields_empty_when_everything_required_is_set() -> None
     result = ExtractedBet(odd="1.85", stake="50.00", bet_date="2026-09-08")
 
     assert result.missing_required_fields() == []
+
+
+def test_parse_direct_answer_reads_bare_stake_without_currency_prefix() -> None:
+    # A direct reply to "how much did you stake?" is unlikely to include R$/$
+    # even though extract_fields requires that prefix when scanning free text.
+    assert parse_direct_answer("stake", "50") == "50"
+
+
+def test_parse_direct_answer_reads_bare_odd_without_a_keyword() -> None:
+    assert parse_direct_answer("odd", "1.85") == "1.85"
+
+
+def test_parse_direct_answer_normalizes_comma_decimal_separator() -> None:
+    assert parse_direct_answer("stake", "50,00") == "50.00"
+
+
+def test_parse_direct_answer_normalizes_the_date_to_iso() -> None:
+    assert parse_direct_answer("bet_date", "08/09/2026") == "2026-09-08"
+
+
+def test_parse_direct_answer_falls_back_to_raw_text_when_unparseable() -> None:
+    assert parse_direct_answer("bet_date", "sometime next week") == "sometime next week"
+
+
+def test_parse_direct_answer_returns_raw_text_for_a_free_text_field() -> None:
+    assert parse_direct_answer("betting_house", "Bet365") == "Bet365"
