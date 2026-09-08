@@ -15,9 +15,14 @@ jobs:
 
       # 1. Changelog - ver docs/CI-CD.md (vault local, nao versionado neste repo)
       - name: Validar atualizacao do CHANGELOG.md
-        # Todo PR valida, inclusive subtask -> branch da story: cada subtarefa adiciona a
-        # propria linha em [Unreleased], que se acumula ate o merge em develop.
-        if: github.event_name == 'pull_request'
+        # So no PR story -> develop/main, ver docs/CI-CD.md "Quais passos rodam em qual PR":
+        # a linha de cada subtask nasce (via jira_story.py) antes da branch daquela subtask
+        # existir, entao o diff de uma PR subtask/ -> story nunca toca CHANGELOG.md por
+        # sequenciamento, nao por esquecimento real - exigir o toque tambem ali quebraria
+        # todo PR de subtask. Achado real: este workflow nunca recebeu esta correcao desde o
+        # bootstrap do epic-009, mesma armadilha ja documentada e corrigida nos outros 6
+        # repositorios de aplicacao.
+        if: github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main')
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
