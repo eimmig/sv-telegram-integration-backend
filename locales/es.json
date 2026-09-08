@@ -6,5 +6,14 @@
   "link_success": "¡Cuenta vinculada con éxito! Ya puedes registrar apuestas por aquí.",
   "link_code_invalid": "Código no encontrado. Revisa el código generado en el sitio y envíalo de nuevo.",
   "link_code_expired": "Ese código expiró. Genera un código nuevo en el sitio y envíalo de nuevo.",
-  "link_already_linked": "Esa cuenta ya está vinculada."
+  "link_already_linked": "Esa cuenta ya está vinculada.",
+  "ask_sport": "¿Cuál es el deporte de esta apuesta? Responde con el número de la opción:",
+  "ask_league": "¿Cuál es la liga/competición de esta apuesta? Responde con el número de la opción:",
+  "ask_market": "¿Cuál es el mercado de esta apuesta? Responde con el número de la opción:",
+  "ask_betting_house_choice": "No pude identificar la casa de apuestas. ¿Cuál de las opciones de abajo es la correcta? Responde con el número:",
+  "catalog_empty_sport": "Todavía no registraste ningún deporte. Registra al menos uno en el sitio antes de capturar apuestas por aquí.",
+  "catalog_empty_league": "Todavía no registraste ninguna liga/competición. Registra al menos una en el sitio antes de capturar apuestas por aquí.",
+  "catalog_empty_market": "Todavía no registraste ningún mercado. Registra al menos uno en el sitio antes de capturar apuestas por aquí.",
+  "catalog_empty_betting_house": "Todavía no registraste ninguna casa de apuestas. Registra al menos una en el sitio antes de capturar apuestas por aquí.",
+  "invalid_catalog_choice": "No entendí tu elección."
 }
