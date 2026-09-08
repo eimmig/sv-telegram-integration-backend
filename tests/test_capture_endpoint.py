@@ -270,9 +270,24 @@ def test_blocked_when_submission_fails_validation(
 
     assert body["status"] == "blocked"
     assert body["message"] == (
-        "Os valores informados não são válidos para essa aposta. Confira a odd e o valor "
-        "apostado e tente novamente."
+        "Os valores informados não são válidos para essa aposta (confira a odd e o valor "
+        "apostado). Envie os dados da aposta novamente."
     )
+
+    # Unlike NO_TELEGRAM_LINK/SERVICE_UNAVAILABLE, the bet's own data is what's
+    # wrong here - preserving it would make every retry fail identically forever,
+    # so state is cleared and the next message starts a fresh conversation.
+    retry = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "endpoint-user-7",
+            "languageCode": "pt-BR",
+            "chatId": "chat-7",
+            "text": "qualquer coisa",
+        },
+    )
+    assert retry.json()["status"] == "pending"
+    assert retry.json()["message"] == "Qual foi a odd dessa aposta?"
 
 
 def test_blocked_when_gateway_unreachable_during_submission(
@@ -287,6 +302,37 @@ def test_blocked_when_gateway_unreachable_during_submission(
 
     assert body["status"] == "blocked"
     assert body["message"] == "Ocorreu um erro. Tente novamente mais tarde."
+
+
+def test_blocked_when_a_resolved_catalog_entry_no_longer_exists(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    monkeypatch.setattr(
+        "telegram_integration.main.submit_bet", lambda *_a, **_kw: SubmitOutcome.CATALOG_ENTRY_NOT_FOUND
+    )
+
+    body = _reach_complete(client, "endpoint-user-12", "chat-12")
+
+    assert body["status"] == "blocked"
+    assert body["message"] == (
+        "Uma das opções escolhidas não existe mais. Envie os dados da aposta novamente."
+    )
+
+    # A stale catalog id (rare race - deleted mid-conversation) can't be fixed by
+    # blindly retrying the same submission - state is cleared so the user
+    # re-resolves against the current catalog instead of looping forever.
+    retry = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "endpoint-user-12",
+            "languageCode": "pt-BR",
+            "chatId": "chat-12",
+            "text": "qualquer coisa",
+        },
+    )
+    assert retry.json()["status"] == "pending"
+    assert retry.json()["message"] == "Qual foi a odd dessa aposta?"
 
 
 def test_failed_submission_preserves_state_for_a_retry(

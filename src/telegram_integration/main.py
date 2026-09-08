@@ -32,6 +32,17 @@ _SUBMIT_OUTCOME_MESSAGE_KEY = {
     SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error",
 }
 _SUBMIT_SUCCESS_OUTCOMES = (SubmitOutcome.CREATED, SubmitOutcome.ALREADY_SUBMITTED)
+# NO_TELEGRAM_LINK/SERVICE_UNAVAILABLE keep the resolved bet in Redis on purpose -
+# the data itself is fine, only an external condition needs to change before a
+# retry can succeed (link the account; wait out the outage). CATALOG_ENTRY_NOT_FOUND
+# and VALIDATION_FAILED mean the bet's own data is what's wrong - preserving it
+# would just make every retry fail the same way forever, so those also clear state
+# alongside a real success.
+_SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
+    *_SUBMIT_SUCCESS_OUTCOMES,
+    SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
+    SubmitOutcome.VALIDATION_FAILED,
+)
 
 _redis_client: redis.Redis | None = None
 
@@ -106,11 +117,10 @@ def capture_bet(
         )
         outcome = submit_bet(result.bet, payload.telegram_user_id, idempotency_key, correlation_id)
         message = get_message(_SUBMIT_OUTCOME_MESSAGE_KEY[outcome], payload.language_code)
-        if outcome in _SUBMIT_SUCCESS_OUTCOMES:
+        if outcome in _SUBMIT_OUTCOMES_THAT_CLEAR_STATE:
             clear_pending(client, payload.telegram_user_id)
-            status = "complete"
-        else:
-            status = "blocked"
+        status = "complete" if outcome in _SUBMIT_SUCCESS_OUTCOMES else "blocked"
+        if status == "blocked":
             bet = None
 
     return CaptureResponse(
