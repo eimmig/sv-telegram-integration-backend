@@ -158,7 +158,7 @@
         {
           "id": "feat-005.1",
           "name": "Retrofit do gate de qualidade (qualitygate.wait + zero issue) no ci.yml",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-203",
           "detail": "Achado do Plan Reviewer: ci.yml deste repositorio nunca recebeu o retrofit de auth-service SV-30 (2026-09-04), ja aplicado em api-gateway/bets-service/stats-service - sem isso o passo SonarCloud sempre passa mesmo com o gate reprovado ou issue aberta.",
           "checklist": [
@@ -173,9 +173,9 @@
         {
           "id": "feat-005.2",
           "name": "CHANGELOG, verificacao final e revisao do vault",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-204",
-          "detail": "Fecha a feature e o epic-005 (raiz), junto com feat-006 - corrige tambem a afirmacao factualmente errada em docs/CI-CD.md sobre a cobertura do retrofit.",
+          "detail": "Fecha esta feature (epic-005 da raiz so fecha quando feat-006 tambem fechar) - corrige tambem a afirmacao factualmente errada em docs/CI-CD.md sobre a cobertura do retrofit.",
           "checklist": [
             "Entrada em CHANGELOG.md (automatica, via tools/jira_story.py na criacao da issue).",
             "./init.sh deste servico e da raiz rodando sem erro.",
@@ -187,7 +187,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-08 - 2 subtasks (SV-203/204, story SV-202) done, PR de subtask (#21, subtask->story) + PR de story (#22, story->develop), CI real e verde nas duas. Achado real do Plan Reviewer (nao a proposta inicial de fechamento formal vazio por analogia com auth-service feat-007): auditoria direta via curl na API do SonarCloud (nao so 'gh run list' verde) mostrou que este repositorio nunca recebeu o retrofit descoberto em auth-service SV-30 (2026-09-04), ja aplicado nos 3 repositorios Java - sem sonar.qualitygate.wait o passo SonarCloud sempre passava mesmo com o gate reprovado, e sem o passo 6 nenhuma issue/hotspot aberto bloqueava merge. docs/CI-CD.md linha 194 afirmava falsamente que a correcao ja cobria 'os 6 repositorios de aplicacao' - corrigida para nao afirmar mais isso (apps/web continua pendente, fora de escopo deste servico, sinalizado na propria nota). Corrigido: args do sonarqube-scan-action ganhou sonar.qualitygate.wait=true condicional via expressao do GitHub Actions (nao um passo run: com bash condicional como nos repos Java, ja que 'args' e input estatico da action) + copia verbatim de validate-sonar-issues.py (script generico, so fala REST API do SonarCloud) + passo 6 novo. Provado em producao, nao so por raciocinio estatico: log real da PR #22 (story->develop) confirma -Dsonar.qualitygate.wait=true aplicado e 'Validar zero issues no SonarCloud' rodou e reportou 'OK sem issues nem security hotspots abertos'. Delivery Reviewer (passe proprio): PASS, nenhum achado P0-P2 - diff minimo, comportamento novo do gate ja provado via execucao real, nao especulacao. Test Suite Auditor e Persistence Auditor nao se aplicam (zero codigo de aplicacao/teste/persistencia tocado, so ci.yml/script/doc). init.sh do servico verde (85 testes, 100% cobertura - precisa TESSDATA_PREFIX/TESSERACT_CMD no ambiente local, ja documentado em session-handoff.md desde feat-002); init.sh da raiz verde (exit 0 - o item informativo de sub-harness reportou FAIL so porque o job em background nao herdou aquelas 2 variaveis de ambiente, mesmo mecanismo, nao um defeito desta feature). Libera epic-005 (raiz) so quando feat-006 tambem fechar."
     },
     {
       "id": "feat-006",
