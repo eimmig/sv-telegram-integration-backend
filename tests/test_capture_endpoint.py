@@ -1,7 +1,8 @@
 import base64
 import io
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 import redis
@@ -126,7 +127,7 @@ def test_returns_complete_after_resolving_every_catalog(
     assert body["bet"]["leagueId"] == "lg-1"
     assert body["bet"]["marketId"] == "mk-1"
     # Not extracted from text (see extraction.py) - always defaults to today.
-    assert body["bet"]["bet_date"] == datetime.now(UTC).date().isoformat()
+    assert body["bet"]["bet_date"] == datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()
 
 
 def test_extracts_from_a_photo_via_ocr(client: TestClient) -> None:
@@ -200,7 +201,7 @@ def test_multi_turn_conversation_carries_state_across_separate_requests(
     assert final["bet"] == {
         "odd": "1.85",
         "stake": "50",
-        "bet_date": datetime.now(UTC).date().isoformat(),
+        "bet_date": datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat(),
         "betting_house": None,
         "sport": None,
         "league": None,

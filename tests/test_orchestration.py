@@ -1,5 +1,7 @@
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import datetime
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pytest
 import redis
@@ -236,7 +238,25 @@ def test_bet_date_defaults_to_today_when_not_otherwise_known(redis_client: redis
 
     assert result.status == "complete"
     assert result.bet is not None
-    assert result.bet["bet_date"] == datetime.now(UTC).date().isoformat()
+    assert result.bet["bet_date"] == datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()
+
+
+def test_bet_date_uses_brasilia_calendar_day_near_midnight_utc(redis_client: redis.Redis) -> None:
+    # 23:30 in Brasilia on 2026-01-15 is already 02:30 UTC on 2026-01-16 - a UTC-based
+    # default would report the wrong calendar day for a bet placed just before midnight
+    # in Brasilia (the timezone every real user of this bot is in).
+    fixed_now = datetime(2026, 1, 15, 23, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))
+    with patch("telegram_integration.orchestration.datetime") as mock_datetime:
+        mock_datetime.now.return_value = fixed_now
+        handle_message(redis_client, "user-tz", "pt-BR", "odd 1.85, R$ 50,00", "corr-1")
+        handle_message(redis_client, "user-tz", "pt-BR", "1", "corr-1")
+        handle_message(redis_client, "user-tz", "pt-BR", "1", "corr-1")
+        handle_message(redis_client, "user-tz", "pt-BR", "1", "corr-1")
+        result = handle_message(redis_client, "user-tz", "pt-BR", "1", "corr-1")
+
+    assert result.status == "complete"
+    assert result.bet is not None
+    assert result.bet["bet_date"] == "2026-01-15"
 
 
 def test_asks_in_english_when_language_code_is_en(redis_client: redis.Redis) -> None:
