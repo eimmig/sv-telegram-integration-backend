@@ -204,7 +204,7 @@
         {
           "id": "feat-006.1",
           "name": "Validar n8n/telegram-bot.json contra instancia n8n real (local, efemera)",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-206",
           "detail": "Achado do Plan Reviewer: infra/docker-compose.yml ja tem n8n provisionado desde epic-001, nunca subido localmente - permite validar de verdade os 7 pontos de risco de n8n/README.md sem precisar de bot Telegram real (payload sintetico da Bot API cobre os pontos que dependem de trigger real).",
           "checklist": [
