@@ -197,10 +197,57 @@
         "feat-004",
         "feat-005"
       ],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio, sem subagentes (risco baixo/medio, mudanca reversivel e local). Veredito: REVISE, 1 achado MAJOR corrigido no plano, 1 decisao BLOCKED resolvida com o usuario via AskUserQuestion antes de codificar. (MAJOR) session-handoff.md de uma sessao anterior afirmava 'nenhuma instancia n8n existe em infra/ hoje' e tratava provisionar uma como decisao pendente com o usuario - falso: infra/docker-compose.yml ja tem o servico n8n (docker.n8n.io/n8nio/n8n:1.100.0, porta 5678, healthcheck) desde epic-001 (done), so nunca foi subido localmente. Corrigido no plano: subir esse n8n localmente (so esse servico do compose, .env local nao commitado, docker ja disponivel na maquina) e validar o workflow de verdade, sem precisar de decisao do usuario sobre provisionar nada novo. Validacao dos 7 pontos de risco documentados em n8n/README.md nao precisa de bot Telegram real (nenhum token existe no projeto, criar um seria dependencia externa desnecessaria): pontos 2/3/4 (schema de conditions do IF, parametros do no Telegram, formato do no Set) sao verificaveis so importando o JSON na UI do n8n; pontos 1/5 (expressao {{$binary.data.data}}, campo update_id de nivel superior) sao verificaveis executando o workflow manualmente com um payload sintetico realista da Bot API do Telegram (pinned/mock data no trigger), sem precisar de webhook real. Decisao resolvida com o usuario (item 4 da description, a propria feature ja sinalizava que precisava): corrigir bet_date pra usar America/Sao_Paulo como default em vez de UTC (nao manter o residual). Itens 2/3 (auth/rate-limit dos endpoints internos) reavaliados sem precisar de pergunta nova - nada mudou desde que foram aceitos (servicos continuam nao containerizados/nao expostos), residual continua valido, so precisa reconfirmacao documentada, nao decisao. Plano original tinha 4 subtasks separando itens 2/3/4 - reduzido pra 3 (subtasks 2 e 3 da proposta inicial mergeadas, nenhuma das duas precisava de pergunta propria). Delivery Reviewer roda sobre o diff real de cada subtask; Persistence Auditor nao se aplica (zero schema/transacao tocado).",
+      "jira": "SV-205",
+      "subtasks": [
+        {
+          "id": "feat-006.1",
+          "name": "Validar n8n/telegram-bot.json contra instancia n8n real (local, efemera)",
+          "status": "in-progress",
+          "jira": "SV-206",
+          "detail": "Achado do Plan Reviewer: infra/docker-compose.yml ja tem n8n provisionado desde epic-001, nunca subido localmente - permite validar de verdade os 7 pontos de risco de n8n/README.md sem precisar de bot Telegram real (payload sintetico da Bot API cobre os pontos que dependem de trigger real).",
+          "checklist": [
+            "Criar .env local em infra/ (copia de .env.example com valores reais de desenvolvimento, nao commitado - .gitignore ja exclui) e subir so o servico n8n via 'docker compose up -d n8n'.",
+            "Importar services/telegram-integration/n8n/telegram-bot.json na UI do n8n (localhost:5678) e conferir pontos 2/3/4 do risco residual (schema de conditions do IF, nomes de parametro do no Telegram, formato values.string do no Set) - corrigir o workflow se algo divergir.",
+            "Montar um payload sintetico realista de Update do Telegram (Bot API, incluindo update_id de nivel superior e um campo photo com file_id) e execucao manual/pinned no n8n pra validar pontos 1/5 (expressao {{$binary.data.data}}, {{$json[\"update_id\"]}}) - corrigir se divergir.",
+            "Atualizar n8n/README.md: remover da secao 'Risco residual' os pontos confirmados/corrigidos, manter so o que genuinamente ainda depende de um bot real (ex.: credencial do Telegram Trigger em producao).",
+            "Derrubar o container (docker compose down) - nao deixar infra/ rodando entre sessoes."
+          ],
+          "validation": "Workflow importado sem erro de schema na instancia real; expressoes criticas confirmadas via execucao manual; n8n/README.md refletindo só os riscos que sobrevivem à validação real.",
+          "owner": "agente"
+        },
+        {
+          "id": "feat-006.2",
+          "name": "bet_date em America/Sao_Paulo + reconfirmar residuais de auth/rate-limit",
+          "status": "not-started",
+          "jira": "SV-207",
+          "detail": "Decisao do usuario via AskUserQuestion (2026-09-08): corrigir bet_date pra usar America/Sao_Paulo como default em vez de UTC quando o campo esta ausente. Itens de auth/rate-limit (POST /bets/capture, /telegram/link, /telegram-accounts) reconfirmados como residual ainda aceito - nada mudou desde feat-002/003 (servicos continuam nao containerizados).",
+          "checklist": [
+            "Corrigir o default de bet_date (extraction.py/orchestration.py, onde a data de hoje e usada quando ausente) pra usar America/Sao_Paulo em vez de UTC - primeira convencao de timezone do projeto, registrar em docs/CONVENTIONS.md.",
+            "Teste novo cobrindo o caso limite perto da meia-noite BRT (aposta feita as 23h de Brasilia nao pode virar o dia seguinte).",
+            "Documentar (n8n/README.md ou CLAUDE.md do servico) a reconfirmacao dos itens de auth/rate-limit como residual aceito ate containerizacao - sem mudanca de codigo, so decisao registrada."
+          ],
+          "validation": "Teste novo prova o caso de meia-noite BRT; docs/CONVENTIONS.md documenta a convencao de timezone; residuais de auth/rate-limit reconfirmados por escrito.",
+          "owner": "agente"
+        },
+        {
+          "id": "feat-006.3",
+          "name": "CHANGELOG, verificacao final e fechamento de epic-005",
+          "status": "not-started",
+          "jira": "SV-208",
+          "detail": "Ultima feature do backlog atual deste servico - fecha epic-005 na raiz junto.",
+          "checklist": [
+            "Entrada em CHANGELOG.md (automatica, via tools/jira_story.py na criacao da issue).",
+            "./init.sh deste servico e da raiz rodando sem erro.",
+            "Delivery Reviewer rodado sobre o diff real desta feature.",
+            "feature_list.json da raiz: epic-005 status done, evidencia preenchida.",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC 1) no mesmo commit."
+          ],
+          "validation": "init.sh verde, Delivery Reviewer sem achado real pendente, evidence preenchida, epic-005 done na raiz.",
+          "owner": "agente"
+        }
+      ],
       "evidence": ""
     }
   ]
