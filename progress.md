@@ -3,8 +3,7 @@
 ## Estado Atual (Current State)
 
 **Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001`..`feat-004` `done`; `feat-005` e `feat-006` são as
-próximas elegíveis)
+**Feature ativa:** nenhuma (`feat-001`..`feat-005` `done`; `feat-006` é a próxima elegível)
 
 ## Status
 
@@ -17,6 +16,7 @@ próximas elegíveis)
 - [x] `feat-003` (RF05 suporte — fluxo de vínculo de conta Telegram) — `done` em 2026-09-08.
 - [x] `feat-004` (RF05 — integração com `POST /api/v1/bets` via `api-gateway`) — `done` em
       2026-09-08.
+- [x] `feat-005` (Pipeline de CI — retrofit do gate de qualidade) — `done` em 2026-09-08.
 
 ### Em andamento
 
@@ -24,13 +24,11 @@ próximas elegíveis)
 
 ### Próximos passos (Next Steps)
 
-1. `feat-005` (Pipeline de CI) — depende só de `feat-001`, feature de fechamento formal (CI já
-   roda de verdade desde `epic-009`).
-2. `feat-006` (Checklist de validação pré-deploy) — depende de `feat-004`/`feat-005`. Reúne
-   riscos residuais que só podem ser resolvidos contra ambiente real (importar
-   `n8n/telegram-bot.json` numa instância n8n de verdade, revisitar autenticação/limites dos
-   endpoints internos quando containerizado) — não bloqueia `epic-005` sozinho, mas precisa
-   rodar antes de qualquer usuário real usar o bot em produção.
+1. `feat-006` (Checklist de validação pré-deploy) — depende de `feat-004`/`feat-005` (ambas
+   `done`, já elegível). Reúne riscos residuais que só podem ser resolvidos contra ambiente real
+   (importar `n8n/telegram-bot.json` numa instância n8n de verdade, revisitar
+   autenticação/limites dos endpoints internos quando containerizado) — última feature do
+   backlog atual deste serviço; ao fechar, fecha também `epic-005` na raiz.
 
 ## `feat-001` fechada — bootstrap uv + FastAPI + i18n + n8n (2026-09-08)
 
@@ -280,6 +278,33 @@ resposta pra provar isso de verdade.
 residual). `feat-006` criada como backlog (checklist de validação pré-deploy, reúne os residuais
 que só um ambiente real resolve). Libera `feat-005`/`feat-006`; `epic-005` (raiz) continua
 `in-progress` até essas duas também fecharem.
+
+## `feat-005` fechada — retrofit do gate de qualidade do SonarCloud (2026-09-08)
+
+Achado real do Plan Reviewer que mudou o escopo da feature: o plano inicial era fechamento formal
+vazio (mesmo padrão de `auth-service feat-007`, CI "já roda de verdade"), mas auditoria direta via
+`curl` na API do SonarCloud (não só `gh run list` verde) mostrou que este repositório nunca
+recebeu o retrofit descoberto em `auth-service SV-30` (2026-09-04) e já aplicado nos 3
+repositórios Java — sem `sonar.qualitygate.wait`, o passo SonarCloud sempre passava mesmo com o
+gate reprovado; sem o passo 6 (`validate-sonar-issues.py`), nenhuma issue/hotspot aberto bloqueava
+merge. `docs/CI-CD.md` linha 194 afirmava (errado) que a correção já cobria "os 6 repositórios de
+aplicação" — corrigida na mesma sessão (`apps/web` continua pendente, fora de escopo deste
+serviço, sinalizado na própria nota).
+
+Corrigido: `args` do `sonarqube-scan-action` ganhou `sonar.qualitygate.wait=true` condicional via
+expressão do GitHub Actions (não um passo `run:` com bash condicional como nos repositórios Java,
+já que `args` é input estático da action) + cópia verbatim de `validate-sonar-issues.py` (script
+genérico, só fala REST API do SonarCloud) + passo 6 novo. Provado em produção, não só por
+raciocínio estático: log real da PR #22 (`story -> develop`) confirma
+`-Dsonar.qualitygate.wait=true` aplicado e "Validar zero issues no SonarCloud" rodando e
+reportando `OK sem issues nem security hotspots abertos`. 2 subtasks (SV-203/204, story SV-202),
+PR de subtask (#21) + PR de story (#22), CI real e verde nas duas. Delivery Reviewer (passe
+próprio): PASS, nenhum achado P0-P2. Test Suite Auditor/Persistence Auditor não se aplicam (zero
+código de aplicação/teste/persistência tocado). `./init.sh` do serviço verde (85 testes, 100%
+cobertura); `./init.sh` da raiz verde (o item informativo de sub-harness reportou FAIL só porque
+o job em background não herdou `TESSDATA_PREFIX`/`TESSERACT_CMD`, não um defeito desta feature).
+Libera `feat-006` (última do backlog atual); `epic-005` (raiz) só fecha quando `feat-006` também
+fechar.
 
 ## Bloqueios / Riscos
 
