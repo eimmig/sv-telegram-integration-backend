@@ -3,7 +3,8 @@
 ## Estado Atual (Current State)
 
 **Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001`..`feat-005` `done`; `feat-006` é a próxima elegível)
+**Feature ativa:** nenhuma (`feat-001`..`feat-006` `done` — backlog atual deste serviço
+completo, `epic-005` fechado na raiz)
 
 ## Status
 
@@ -17,18 +18,18 @@
 - [x] `feat-004` (RF05 — integração com `POST /api/v1/bets` via `api-gateway`) — `done` em
       2026-09-08.
 - [x] `feat-005` (Pipeline de CI — retrofit do gate de qualidade) — `done` em 2026-09-08.
+- [x] `feat-006` (Checklist de validação pré-deploy) — `done` em 2026-09-08.
 
 ### Em andamento
 
-- Nenhuma feature iniciada.
+- Nenhuma feature iniciada — backlog atual deste serviço completo.
 
 ### Próximos passos (Next Steps)
 
-1. `feat-006` (Checklist de validação pré-deploy) — depende de `feat-004`/`feat-005` (ambas
-   `done`, já elegível). Reúne riscos residuais que só podem ser resolvidos contra ambiente real
-   (importar `n8n/telegram-bot.json` numa instância n8n de verdade, revisitar
-   autenticação/limites dos endpoints internos quando containerizado) — última feature do
-   backlog atual deste serviço; ao fechar, fecha também `epic-005` na raiz.
+- Nenhum item elegível no `feature_list.json` deste serviço no momento. Próximo trabalho depende
+  de novo backlog ser definido (ex.: containerização, que revisitaria os residuais de
+  auth/rate-limit reconfirmados em `n8n/README.md`) ou de outro epic da raiz liberar dependência
+  cruzada.
 
 ## `feat-001` fechada — bootstrap uv + FastAPI + i18n + n8n (2026-09-08)
 
@@ -306,18 +307,45 @@ o job em background não herdou `TESSDATA_PREFIX`/`TESSERACT_CMD`, não um defei
 Libera `feat-006` (última do backlog atual); `epic-005` (raiz) só fecha quando `feat-006` também
 fechar.
 
+## `feat-006` fechada — checklist de validação pré-deploy (2026-09-08)
+
+Última feature do backlog atual deste serviço — fecha `epic-005` (raiz). Achado real do Plan
+Reviewer: `infra/docker-compose.yml` já provisiona um `n8n` real desde `epic-001`, nunca subido
+localmente — não havia decisão de usuário pendente sobre "como provisionar" (como uma sessão
+anterior registrou), só faltava efetivamente rodar. Subido localmente (efêmero, `.env` não
+commitado, derrubado ao final), `telegram-bot.json` importado via `n8n import:workflow` (CLI) e
+cada um dos 5 pontos de risco residual de `n8n/README.md` confirmado correto contra evidência
+direta — schema real via `GET /types/nodes.json`, comportamento de runtime lendo o código-fonte
+real dos nodes `Telegram`/`TelegramTrigger` dentro do container — em vez da documentação
+secundária usada na fundação original do arquivo. Nenhuma mudança no workflow foi necessária.
+
+Decisão resolvida com o usuário via `AskUserQuestion`: `bet_date` passou a usar
+`America/Sao_Paulo` como default em vez de UTC (primeira convenção de timezone do projeto,
+registrada em `docs/CONVENTIONS.md`) — teste novo prova o caso de fronteira (23h30 BRT = 02h30
+UTC do dia seguinte). Gotcha real descoberto na implementação: `zoneinfo` (stdlib) não tem banco
+de dados IANA embutido no Windows — precisou `tzdata` como dependência explícita (funcionaria por
+acaso em Linux/CI, que normalmente já tem a tzdb do sistema — corrigido antes de virar bug
+silencioso específico de máquina). Itens de auth/rate-limit reconfirmados como residual ainda
+aceito em `n8n/README.md` — nada mudou desde que foram aceitos.
+
+3 subtasks (SV-206..208, story SV-205), PRs de subtask (#25, #26) com CI real e verde. Delivery
+Reviewer (passe próprio): PASS, nenhum achado P0-P2. 86 testes, 0 falhas, cobertura 100% (gate
+80%). `./init.sh` do serviço verde; `./init.sh` da raiz verde (mesmo gotcha de env não herdado
+pelo job em background já visto no fechamento de `feat-005`, não defeito desta feature). Vault
+atualizado no mesmo commit lógico: `docs/CONVENTIONS.md` (nova seção "Timezone padrão"),
+`n8n/README.md` (risco residual reescrito com evidência real). Fecha `epic-005` (raiz).
+
 ## Bloqueios / Riscos
 
-- Nenhum aberto que bloqueie fechar `epic-005` além de `feat-005`/`feat-006` (ambas já elegíveis).
-  `n8n/telegram-bot.json` tem agora 7 pontos não validados contra instância real (novo de
-  `feat-004`: campo `update_id` como nível superior do payload, nunca referenciado antes neste
-  workflow), documentados em `n8n/README.md` e reunidos no checklist de `feat-006` — não
-  bloqueante para o código em si, mas precisa rodar antes de qualquer usuário real usar o bot.
+- Nenhum aberto no backlog atual (`feat-001`..`feat-006` todas `done`).
 - `POST /bets/capture` e `POST /telegram/link` sem autenticação própria nem limite de tamanho de
   corpo — aceitável no estágio atual (rede local/interna, serviço não containerizado/exposto),
   revisitar quando containerizado. `POST /telegram/link` também sem rate limiting no lado
   `auth-service` (risco residual aceito em `feat-003`, mitigado por TTL curto + espaço de busca
-  grande do código de vínculo).
+  grande do código de vínculo). Reconfirmado em `feat-006` sem mudança — ver `n8n/README.md`.
+- Credencial `telegramApi` (token do BotFather) nunca configurada nem testada contra a API real
+  do Telegram — o fluxo ponta a ponta (mensagem real → webhook → n8n → Python → resposta)
+  continua não exercitado (`n8n/README.md`). Revisitar antes de qualquer usuário real usar o bot.
 
 ## Harness criado (2026-07-30)
 
