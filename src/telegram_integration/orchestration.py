@@ -13,8 +13,9 @@ ready to submit", not "already submitted".
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 import redis
 
@@ -33,6 +34,11 @@ _QUESTION_KEYS = {
     "odd": "ask_odd",
     "stake": "ask_stake",
 }
+
+# First timezone convention in the project (see docs/CONVENTIONS.md "Timezone padrao") - bets
+# are placed by Brazilian users, so "today" must mean today in Brasilia, not UTC (a bet placed
+# at 23h BRT was landing on tomorrow's date under UTC).
+_DEFAULT_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 # Order is arbitrary but fixed - betting_house first since it's the only one
 # extraction.py ever has a best-effort name for (fuzzy match may skip the
@@ -233,7 +239,7 @@ def handle_message(
         # docstring) - a bet-slip normally shows the event's date, not
         # necessarily when the bet was placed, and today is right far more
         # often than a guess from the slip would be.
-        fields["bet_date"] = datetime.now(UTC).date().isoformat()
+        fields["bet_date"] = datetime.now(_DEFAULT_TIMEZONE).date().isoformat()
 
     catalog_ids = dict(pending.catalog_ids) if pending is not None else {}
     return _advance_catalog(client, telegram_user_id, language_code, correlation_id, fields, catalog_ids)

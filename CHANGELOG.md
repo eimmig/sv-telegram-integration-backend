@@ -34,3 +34,7 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-202](https://stakevault.atlassian.net/browse/SV-202) - Pipeline de CI (GitHub Actions + SonarCloud)
 - [SV-203](https://stakevault.atlassian.net/browse/SV-203) - Retrofit do gate de qualidade (qualitygate.wait + zero issue) no ci.yml
 - [SV-204](https://stakevault.atlassian.net/browse/SV-204) - CHANGELOG, verificacao final e revisao do vault
+- [SV-205](https://stakevault.atlassian.net/browse/SV-205) - Checklist de validacao pre-deploy
+- [SV-206](https://stakevault.atlassian.net/browse/SV-206) - Validar n8n/telegram-bot.json contra instancia n8n real (local, efemera)
+- [SV-207](https://stakevault.atlassian.net/browse/SV-207) - bet_date em America/Sao_Paulo + reconfirmar residuais de auth/rate-limit
+- [SV-208](https://stakevault.atlassian.net/browse/SV-208) - CHANGELOG, verificacao final e fechamento de epic-005
