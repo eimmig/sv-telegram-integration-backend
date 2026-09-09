@@ -234,7 +234,7 @@
         {
           "id": "feat-006.3",
           "name": "CHANGELOG, verificacao final e fechamento de epic-005",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-208",
           "detail": "Ultima feature do backlog atual deste servico - fecha epic-005 na raiz junto.",
           "checklist": [
