@@ -234,7 +234,7 @@
         {
           "id": "feat-006.3",
           "name": "CHANGELOG, verificacao final e fechamento de epic-005",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-208",
           "detail": "Ultima feature do backlog atual deste servico - fecha epic-005 na raiz junto.",
           "checklist": [
@@ -248,7 +248,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-08 - 3 subtasks (SV-206..208, story SV-205) done, PRs de subtask (#25, #26) com CI real e verde. Ultima feature do backlog atual deste servico - fecha epic-005 (raiz). Achado real do Plan Reviewer (nao a decisao pendente que uma sessao anterior registrou): infra/docker-compose.yml ja provisiona n8n desde epic-001, nunca subido localmente - nao havia decisao de usuario pra tomar sobre 'como provisionar uma instancia real', so faltava efetivamente rodar. Subido localmente (efemero, .env nao commitado), workflow importado via CLI e cada um dos 5 pontos de risco residual de n8n/README.md confirmado correto contra evidencia direta - schema real via GET /types/nodes.json, comportamento de runtime via leitura do codigo-fonte real dos nodes Telegram/TelegramTrigger dentro do container (nao documentacao secundaria como na fundacao original do arquivo). Nenhuma mudanca no workflow foi necessaria - risco residual eliminado, nao so reduzido. Decisao resolvida com o usuario via AskUserQuestion (item 4 da description original): bet_date passou a usar America/Sao_Paulo como default em vez de UTC - primeira convencao de timezone do projeto, registrada em docs/CONVENTIONS.md. Teste novo prova o caso de fronteira (23h30 BRT = 02h30 UTC do dia seguinte). Gotcha real descoberto na implementacao: zoneinfo (stdlib) nao tem banco de dados IANA embutido no Windows - precisou adicionar tzdata como dependencia explicita (funcionaria sem isso em Linux/CI por acaso, dependendo do SO ja ter a tzdb do sistema - corrigido antes de virar bug silencioso especifico de maquina). Itens de auth/rate-limit (POST /bets/capture, /telegram/link, /telegram-accounts) reconfirmados como residual ainda aceito em n8n/README.md - nada mudou desde que foram aceitos (servicos continuam nao containerizados). Delivery Reviewer (passe proprio): PASS, nenhum achado P0-P2 - diff minimo (orchestration.py + 2 arquivos de teste + docs), comportamento novo provado por teste real, nao especulacao. Test Suite Auditor nao rodado separadamente (mesmo passe cobriu ambos - risco baixo, mudanca local e reversivel); Persistence Auditor nao se aplica (zero schema/transacao tocado). 86 testes, 0 falhas, cobertura 100% (gate 80%). ./init.sh do servico verde. Vault atualizado no mesmo commit logico: docs/CONVENTIONS.md (nova secao 'Timezone padrao'), n8n/README.md (secao de risco residual reescrita com evidencia real, secao nova de reconfirmacao dos residuais de auth/rate-limit). Fecha epic-005 (raiz) - ultima feature do backlog atual de telegram-integration."
     }
   ]
 }

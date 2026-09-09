@@ -2,55 +2,50 @@
 
 ## Current Objective
 
-- Goal: `epic-005` (telegram-integration) — `feat-001`..`feat-005` entregues. `feat-006`
-  (checklist de validação pré-deploy) é a última do backlog atual; ao fechar, fecha também
-  `epic-005` na raiz.
-- Current status: `feat-005` `done`, merged into `develop`.
-- Branch / commit: `develop` @ `c5d6004` (merge of `feature/SV-202`) + commit de evidência
-  `7139347` (`docs: mark feat-005.1 done, start feat-005.2`, ainda a mergear em `develop` via
-  `subtask/SV-204` → `feature/SV-202` → `develop`).
+- Goal: `epic-005` (telegram-integration) — `feat-001`..`feat-006` entregues. Backlog atual deste
+  serviço está completo; `epic-005` fecha na raiz junto com esta feature.
+- Current status: `feat-006` `done`, merged into `develop`.
+- Branch / commit: `develop` (a atualizar após o merge de `feature/SV-205`).
 
 ## Completed This Session
 
-- [x] `feat-005` (Pipeline de CI — retrofit do gate de qualidade): `sonar.qualitygate.wait`
-      condicional no passo 5 + passo 6 novo (`validate-sonar-issues.py`). Ver `progress.md` para
-      o detalhe completo (achado real do Plan Review, Delivery Reviewer).
-- [x] `docs/CI-CD.md` corrigido — não afirma mais que o retrofit de `auth-service SV-30` cobre
-      "os 6 repositórios de aplicação" (era falso: `telegram-integration` nunca tinha recebido, e
-      `apps/web` continua sem receber).
+- [x] `feat-006` (Checklist de validação pré-deploy): validação real de `n8n/telegram-bot.json`
+      contra uma instância n8n de verdade (local, efêmera) + correção de `bet_date` para
+      `America/Sao_Paulo`. Ver `progress.md` para o detalhe completo.
+- [x] `docs/CONVENTIONS.md` (raiz): nova seção "Timezone padrão" — primeira convenção de
+      timezone do projeto.
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Build/test | `uv run pytest --cov --cov-fail-under=80` | 85 tests, 0 failures, 100% coverage | precisa `TESSDATA_PREFIX`/`TESSERACT_CMD` no ambiente (ver "Blockers / Risks") |
+| Build/test | `uv run pytest --cov --cov-fail-under=80` | 86 tests, 0 failures, 100% coverage | precisa `TESSDATA_PREFIX`/`TESSERACT_CMD` no ambiente (ver "Blockers / Risks") |
 | Local harness | `./init.sh` | pass | |
 | Root harness | `../../init.sh` | pass (exit 0) | item informativo de sub-harness reportou FAIL só por env não herdado em job background, não defeito real |
-| CI (subtask gate) | GitHub Actions | pass | PR #21 (`subtask/SV-203 -> feature/SV-202`) |
-| CI (full gate) | GitHub Actions + SonarCloud | pass | PR #22 (`feature/SV-202 -> develop`) — log real confirma `-Dsonar.qualitygate.wait=true` aplicado e passo 6 reportando `OK sem issues nem security hotspots abertos` |
-| Plan Reviewer | review-suite skill | REVISE -> corrigido antes de codificar | 1 MAJOR: escopo mudou de fechamento formal vazio pra retrofit real, achado por auditoria direta na API do SonarCloud |
-| Delivery Reviewer | review-suite skill | PASS | nenhum achado P0-P2, diff mínimo já provado em produção |
+| CI (subtask gate) | GitHub Actions | pass | PR #25 (n8n validation), PR #26 (timezone fix) |
+| Plan Reviewer | review-suite skill | REVISE -> corrigido antes de codificar | achado real: infra/ já tinha n8n provisionado, não era decisão pendente do usuário |
+| Delivery Reviewer | review-suite skill | PASS | nenhum achado P0-P2 |
 
 ## Decisions Made
 
-- `feat-005` não era fechamento formal vazio como o plano inicial propunha (por analogia com
-  `auth-service feat-007`) — auditoria real (curl na API do SonarCloud, não só CI verde)
-  encontrou que o retrofit de `auth-service SV-30` nunca chegou neste repositório. Decisão:
-  corrigir de verdade em vez de fechar a feature ignorando o gap.
-- `sonar.qualitygate.wait=true` aplicado via expressão do GitHub Actions embutida na string de
-  `args` (não um passo `run:` com bash condicional como nos 3 repositórios Java) — `args` do
-  `sonarqube-scan-action` é input estático da action, não um shell script.
-- `docs/CI-CD.md` corrigido no mesmo commit lógico: a frase "corrigidas nos 6 repositórios de
-  aplicação" virou uma lista precisa (3 Java + `telegram-integration`), com `apps/web` marcado
-  como pendente e fora de escopo deste serviço.
+- Instância n8n de teste: `infra/docker-compose.yml` já provisiona o serviço `n8n` desde
+  `epic-001` — usada localmente (efêmera, `.env` não commitado, derrubada ao final da subtask),
+  não uma instância permanente nova. Validação sem bot Telegram real: schema de nós via
+  `GET /types/nodes.json` da própria API do n8n, comportamento de runtime lendo o código-fonte
+  real dos nodes `Telegram`/`TelegramTrigger` dentro do container.
+- `bet_date` default: `America/Sao_Paulo` em vez de UTC (decisão do usuário via
+  `AskUserQuestion`) — primeira convenção de timezone do projeto, `docs/CONVENTIONS.md`.
+- `tzdata` adicionado como dependência explícita — `zoneinfo` (stdlib) não tem banco IANA
+  embutido no Windows.
 
 ## Blockers / Risks
 
-- Nenhum bloqueante para o código em si. Ver `progress.md` seção "Bloqueios / Riscos" para a
-  lista completa de residuais aceitos — todos já reunidos como checklist em `feat-006`.
-- `apps/web` continua sem o retrofit do gate de qualidade do SonarCloud (mesmo gap que existia
-  aqui até esta sessão) — fora de escopo deste serviço, fica para a própria feature de CI
-  daquele repositório.
+- Nenhum bloqueante no backlog atual deste serviço (`feat-001`..`feat-006` todas `done`).
+- `POST /bets/capture`, `POST /telegram/link` e `POST /api/v1/telegram-accounts` (auth-service)
+  sem autenticação própria/rate limiting/limite de corpo — residual aceito, reconfirmado em
+  `feat-006`, revisitar quando este serviço for containerizado.
+- Credencial `telegramApi` (token do BotFather) nunca configurada — fluxo ponta a ponta com um
+  bot Telegram real continua não exercitado (ver `n8n/README.md`).
 - Ambiente de desenvolvimento: `TESSDATA_PREFIX=/c/Users/eduar/AppData/Local/tessdata` e
   `TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"` precisam estar no ambiente pro
   `./init.sh` passar — persistidos via `setx` para sessões futuras, mas sessões Bash novas às
@@ -63,13 +58,12 @@
 2. Read this directory's `CLAUDE.md`, `feature_list.json`, `progress.md`.
 3. Run `./init.sh` — exportar `TESSDATA_PREFIX`/`TESSERACT_CMD` (ver "Blockers / Risks") se a
    sessão não herdar do ambiente persistido.
-4. `Plan Reviewer` antes de codificar `feat-006` (checklist pré-deploy — depende de decidir com o
-   usuário quando/como validar contra uma instância n8n real, já que não existe uma provisionada
-   no projeto ainda; é a última feature do backlog atual deste serviço).
+4. Backlog atual deste serviço está completo (`feat-001`..`feat-006` `done`). Não há feature
+   elegível em `feature_list.json` deste serviço no momento — próximo trabalho depende de novo
+   backlog ser definido ou de outro epic da raiz.
 
 ## Recommended Next Step
 
-- `feat-006` é a única feature elegível restante. Precisa de uma decisão prévia com o usuário:
-  como/quando provisionar uma instância n8n real pra validar o workflow (nenhuma existe em
-  `infra/` hoje — confirmar se isso é escopo de `infra/` ou de `apps/web`/deploy antes de começar
-  a codificar). Ao fechar `feat-006`, `epic-005` (raiz) fecha junto.
+- Nenhum item elegível neste serviço. Verificar `../../feature_list.json` (raiz) para outros
+  epics `not-started` cujas dependências já estejam `done`, ou aguardar novo backlog para
+  `telegram-integration` (ex.: containerização, que revisitaria os residuais de auth/rate-limit).
