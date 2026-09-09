@@ -41,34 +41,51 @@ existente. As URLs dos nós `HTTP Request` (`http://localhost:8000/bets/capture`
 de ambiente/configuração do n8n quando este serviço for containerizado (fora do escopo de
 `feat-002`/`feat-003`/`feat-004`).
 
-## Risco residual (registrado nos Plan Reviews de feat-001 e feat-002)
+## Validado contra instância n8n real (feat-006, 2026-09-08)
 
-Este JSON foi montado a partir da estrutura de export documentada do n8n (nós `nodes[]`/
-`connections{}`, campos `type`/`typeVersion`/`position`/`parameters`), não exportado de uma
-instância real rodando — `docs.n8n.io/workflows/export-import` retornou 404 no momento da
-pesquisa, então o grounding veio de fonte secundária (confirmado: tipo do nó Telegram Trigger,
-formato geral de `Set`, existência do recurso `file`/operação `get` do nó `Telegram` com os
-parâmetros `fileId`/`download`). **Antes de usar em produção, importar este arquivo numa
-instância n8n real e confirmar**, em ordem de risco:
+Este JSON foi originalmente montado a partir da estrutura de export documentada do n8n, sem
+acesso a uma instância real (`docs.n8n.io/workflows/export-import` retornou 404 durante a
+pesquisa em `feat-001`) — os 5 pontos abaixo ficaram como risco residual aceito até esta feature.
 
-1. **`{{$binary.data.data}}`** (nó "Normalize photo payload") — a expressão exata para acessar o
-   conteúdo binário baixado como base64 varia entre versões do n8n; não verificada contra uma
-   instância real.
-2. O schema de `conditions` do nó `IF` (`has-photo`, `is-link-command`) — usado aqui o formato
-   mais antigo/simples (`conditions.string[]`), que pode ter sido substituído pelo formato v2
-   (`conditions.combinator`/`conditions.conditions[]`) em versões recentes do n8n. O campo
-   `operation: "startsWith"` do nó novo `is-link-command` (`feat-003`) segue o mesmo risco —
-   nome exato da operação não confirmado contra uma instância real.
-3. Os nomes exatos dos parâmetros do nó `Telegram` (`resource`/`operation`/`fileId`/`download`)
-   — confirmados na documentação oficial só como rótulos de UI, não como chaves JSON.
-4. `parameters.values.string` do nó `Set` (já sinalizado desde `feat-001`) — inclui o `Normalize
-   link payload` novo (`feat-003`), com a mesma ressalva pro método `.split(\" \")[1]` usado ali
-   (sintaxe JS padrão, mas o contexto de expressão do n8n em torno dela não foi validado contra
-   uma instância real).
-5. **`{{$json["update_id"]}}`** (nós "Normalize text/photo payload", `feat-004`) — assume que o
-   payload bruto do Telegram Trigger tem `update_id` como campo de nível superior, irmão de
-   `message` (formato padrão da Bot API do Telegram), nunca referenciado neste workflow até
-   agora (todos os campos anteriores vêm de dentro de `message.*`). Usado como base do
-   `Idempotency-Key` da chamada `POST /api/v1/bets` (protege contra reenvio do mesmo webhook pelo
-   Telegram) — se o campo estiver em outro nível na instância real, a chave de idempotência vira
-   `None`/vazia silenciosamente; revisitar junto com o item 1 ao validar contra uma instância real.
+`infra/docker-compose.yml` já provisiona um serviço `n8n` real (`docker.n8n.io/n8nio/n8n:1.100.0`)
+desde `epic-001`, nunca subido localmente até agora. Subido via `docker compose up -d n8n`
+(`.env` local não commitado) e validado com evidência direta, sem precisar de bot Telegram real
+(nenhum token existe no projeto):
+
+- Importado via `n8n import:workflow --input=telegram-bot.json` (CLI dentro do container) —
+  sucesso, sem erro de schema.
+- Schema de nós/parâmetros conferido contra `GET /types/nodes.json` (definição real dos node
+  types instalados nesta versão) via a API REST do próprio n8n (conta owner local criada só para
+  a inspeção, instância efêmera).
+- Comportamento de runtime (o que gera cada expressão) conferido lendo o código-fonte real dos
+  nodes `Telegram`/`TelegramTrigger` dentro do container (`node_modules/n8n-nodes-base/dist/...`).
+
+Resultado — **os 5 pontos confirmados corretos, nenhuma divergência, nenhuma mudança necessária
+no workflow**:
+
+1. **`{{$binary.data.data}}`** — confirmado no código-fonte de `Telegram.node.js`: o download de
+   arquivo (`resource: file`/`operation: get`) grava o resultado como
+   `binary: { data }` (propriedade binária chamada literalmente `data`), e `prepareBinaryData`
+   preenche o campo `.data` daquele objeto com o conteúdo em base64 — `$binary.data.data` é
+   exatamente essa cadeia, não uma coincidência de nome.
+2. Schema de `conditions` do nó `IF` v1 (`conditions.string[]`) — confirmado ainda registrado e
+   suportado em 1.100.0 (`GET /types/nodes.json` lista as versões `1` e `[2, 2.1, 2.2]` como
+   variantes coexistentes do mesmo node type, `defaultVersion` 2.2 só afeta nós novos). Operação
+   `"startsWith"` confirmada como valor válido do enum `conditions.string[].operation` do node v1.
+3. Nomes exatos dos parâmetros do nó `Telegram` confirmados via `GET /types/nodes.json`:
+   `resource: "file"` + `operation: "get"` aceita `fileId`/`download`; `resource: "message"` +
+   `operation: "sendMessage"` exige `chatId`/`text` (ambos `required: true`).
+4. `parameters.values.string` do nó `Set` v1 — confirmado ainda registrado (`version: [1, 2]` no
+   node type instalado) e importado sem erro nem transformação. `.split(" ")[1]` é JS padrão,
+   sem risco específico do n8n.
+5. **`{{$json["update_id"]}}`** — confirmado no código-fonte de `TelegramTrigger.node.js`:
+   `webhook()` faz `bodyData = this.getBodyData()` e repassa o corpo bruto da requisição sem
+   nenhuma transformação (`returnJsonArray([bodyData])`) — `update_id` chega exatamente como a
+   Bot API do Telegram o envia, irmão de `message` no nível raiz.
+
+**Residual que sobrevive** (não dá pra validar sem um bot Telegram real, fora do escopo local):
+credencial `telegramApi` (token do BotFather) nunca configurada nem testada contra a API real do
+Telegram — o fluxo completo ponta a ponta (mensagem real → webhook → n8n → Python → resposta)
+continua não exercitado. Optado por não criar um bot de teste agora (dependência externa
+desnecessária pra este checklist); revisitar antes de qualquer usuário real usar o bot em
+produção.
