@@ -158,7 +158,7 @@
         {
           "id": "feat-005.1",
           "name": "Retrofit do gate de qualidade (qualitygate.wait + zero issue) no ci.yml",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-203",
           "detail": "Achado do Plan Reviewer: ci.yml deste repositorio nunca recebeu o retrofit de auth-service SV-30 (2026-09-04), ja aplicado em api-gateway/bets-service/stats-service - sem isso o passo SonarCloud sempre passa mesmo com o gate reprovado ou issue aberta.",
           "checklist": [
@@ -173,9 +173,9 @@
         {
           "id": "feat-005.2",
           "name": "CHANGELOG, verificacao final e revisao do vault",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-204",
-          "detail": "Fecha a feature e o epic-005 (raiz), junto com feat-006 - corrige tambem a afirmacao factualmente errada em docs/CI-CD.md sobre a cobertura do retrofit.",
+          "detail": "Fecha esta feature (epic-005 da raiz so fecha quando feat-006 tambem fechar) - corrige tambem a afirmacao factualmente errada em docs/CI-CD.md sobre a cobertura do retrofit.",
           "checklist": [
             "Entrada em CHANGELOG.md (automatica, via tools/jira_story.py na criacao da issue).",
             "./init.sh deste servico e da raiz rodando sem erro.",
