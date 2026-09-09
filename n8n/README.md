@@ -89,3 +89,16 @@ Telegram — o fluxo completo ponta a ponta (mensagem real → webhook → n8n �
 continua não exercitado. Optado por não criar um bot de teste agora (dependência externa
 desnecessária pra este checklist); revisitar antes de qualquer usuário real usar o bot em
 produção.
+
+## Outros residuais aceitos (reconfirmados em `feat-006`, 2026-09-08)
+
+Reavaliados sem mudança de código — nada mudou desde que foram aceitos nas features originais,
+continuam válidos até a condição que os motivou (containerização) acontecer de verdade:
+
+- **`POST /bets/capture` e `POST /telegram/link` sem autenticação própria nem limite de tamanho
+  de corpo** (aceito em `feat-002`/`feat-003`) — aceitável só enquanto o serviço roda em rede
+  local/interna, não containerizado/exposto. Revisitar quando este serviço for containerizado
+  (ver `feat-006` original, item reunido no checklist pré-deploy).
+- **`POST /api/v1/telegram-accounts` em `auth-service` sem rate limiting** (aceito em
+  `telegram-integration feat-003`, mitigado por TTL curto do código de vínculo + espaço de busca
+  grande) — revisitar se `auth-service` for exposto além da rede interna.

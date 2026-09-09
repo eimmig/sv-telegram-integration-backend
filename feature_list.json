@@ -220,7 +220,7 @@
         {
           "id": "feat-006.2",
           "name": "bet_date em America/Sao_Paulo + reconfirmar residuais de auth/rate-limit",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-207",
           "detail": "Decisao do usuario via AskUserQuestion (2026-09-08): corrigir bet_date pra usar America/Sao_Paulo como default em vez de UTC quando o campo esta ausente. Itens de auth/rate-limit (POST /bets/capture, /telegram/link, /telegram-accounts) reconfirmados como residual ainda aceito - nada mudou desde feat-002/003 (servicos continuam nao containerizados).",
           "checklist": [
