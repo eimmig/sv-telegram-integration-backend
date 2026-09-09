@@ -147,14 +147,46 @@
     {
       "id": "feat-005",
       "name": "Pipeline de CI (GitHub Actions + SonarCloud)",
-      "description": "Workflow ja versionado em .github/workflows/ci.yml (dentro deste repositorio - este servico e seu proprio repositorio Git, nao um monorepo, ver docs/CI-CD.md) com 5 passos: validacao de CHANGELOG.md atualizado, validacao de chaves de traducao (locales/pt-BR.json, en-US.json, es.json - formato fechado em docs/DECISIONS-LOG.md 2026-08-02), build (uv sync + ruff check), testes unitarios + cobertura (pytest --cov), qualidade/cobertura no SonarCloud (sonar-project.properties, projectKey sv-telegram-integration-backend). Scripts de validacao em .github/scripts/ (duplicados neste repositorio, nao compartilhados). Repositorio GitHub: https://github.com/eimmig/sv-telegram-integration-backend.git. So funciona de fato apos este repositorio existir no GitHub e o setup do SonarCloud (org, projeto, SONAR_TOKEN, SONAR_ORGANIZATION) estar feito - ver docs/CI-CD.md secao 'Setup pendente'.",
+      "description": "Workflow ja versionado em .github/workflows/ci.yml (dentro deste repositorio - este servico e seu proprio repositorio Git, nao um monorepo, ver docs/CI-CD.md) com 6 passos (corrigido de '5' nesta feature - passo 6 adicionado aqui, description desatualizada ate este ponto): validacao de CHANGELOG.md atualizado, validacao de chaves de traducao (locales/pt-BR.json, en-US.json, es.json - formato fechado em docs/DECISIONS-LOG.md 2026-08-02), build (uv sync + ruff check), testes unitarios + cobertura (pytest --cov), qualidade/cobertura no SonarCloud (SonarSource/sonarqube-scan-action@v4, sonar-project.properties, projectKey eimmig_sv-telegram-integration-backend, sonar.qualitygate.wait=true condicional - pulado em push direto p/ develop, mesma causa raiz do passo 6), gate de zero issue/hotspot do SonarCloud (validate-sonar-issues.py). Scripts de validacao em .github/scripts/ (duplicados neste repositorio, nao compartilhados). Repositorio GitHub: https://github.com/eimmig/sv-telegram-integration-backend.git. Setup do SonarCloud (org, projeto, SONAR_TOKEN, SONAR_ORGANIZATION) ja feito (epic-009/feat-003 de infra) - ver docs/CI-CD.md secao 'Setup pendente'.",
       "dependencies": [
         "feat-001"
       ],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-08, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado contra o plano antes de qualquer mudanca. Veredito: REVISE, 1 achado MAJOR corrigido no plano (nenhum exigia decisao do usuario). (MAJOR) description original desta feature dizia '5 passos' e o plano proposto inicialmente era so fechamento formal (sem codigo/workflow novo, por analogia com auth-service feat-007) - mas auditoria real (curl direto na API do SonarCloud, nao so 'gh run list' verde) achou que ci.yml deste repositorio nunca recebeu o retrofit descoberto em auth-service SV-30 (2026-09-04) e ja aplicado nos outros 3 repositorios Java (api-gateway/bets-service/stats-service): sem -Dsonar.qualitygate.wait equivalente, o passo SonarCloud sempre sai verde mesmo que o gate reprove (scanner so envia os dados, nao espera o processamento assincrono); e sem o passo 6 (.github/scripts/validate-sonar-issues.py), nenhuma issue/hotspot aberto bloqueia merge - o gate 'Sonar way' padrao do plano gratuito nao tem condicao de issue nova. docs/CI-CD.md linha 194 afirma que a correcao foi aplicada 'nos 6 repositorios de aplicacao', mas isso e falso para telegram-integration (e tambem para apps/web, fora de escopo desta feature/servico - nao tocado aqui, sinalizado a parte). Corrigido no plano: retrofit do sonarqube-scan-action (args com sonar.qualitygate.wait condicional via expressao do GitHub Actions, ja que 'args' e input estatico de uma action, nao um passo run: com bash condicional como nos repos Java) + copia verbatim de validate-sonar-issues.py (script generico, so fala com a API REST do SonarCloud, roda em qualquer linguagem) + passo 6 no ci.yml, mesmas condicoes de guarda (pula em push direto p/ develop, API do plano gratuito bloqueia branch != main). Correcao de docs/CI-CD.md linha 194 para nao afirmar mais 'nos 6 repositorios' quando so 4 (os 3 Java + este) estao corrigidos - apps/web seguindo pendente, fora de escopo. Rodada de desafio independente executada como passe proprio (achado veio de auditoria direta via curl, nao de subagente) - independencia reduzida, declarada. Delivery Reviewer roda sobre o diff real (ci.yml + script novo + doc); Persistence Auditor nao se aplica (zero persistencia tocada).",
+      "jira": "SV-202",
+      "subtasks": [
+        {
+          "id": "feat-005.1",
+          "name": "Retrofit do gate de qualidade (qualitygate.wait + zero issue) no ci.yml",
+          "status": "in-progress",
+          "jira": "SV-203",
+          "detail": "Achado do Plan Reviewer: ci.yml deste repositorio nunca recebeu o retrofit de auth-service SV-30 (2026-09-04), ja aplicado em api-gateway/bets-service/stats-service - sem isso o passo SonarCloud sempre passa mesmo com o gate reprovado ou issue aberta.",
+          "checklist": [
+            "Passo 5 (SonarCloud): args do sonarqube-scan-action ganha -Dsonar.qualitygate.wait=true condicional via expressao do GitHub Actions (pulado so em push direto p/ develop - mesma causa raiz do passo 6, API do plano gratuito bloqueia branch != main).",
+            "Copiar .github/scripts/validate-sonar-issues.py verbatim de bets-service (script generico, so fala com REST API do SonarCloud) para services/telegram-integration/.github/scripts/.",
+            "Passo 6 novo no ci.yml: 'Validar zero issues no SonarCloud', mesma condicao de guarda usada nos repos Java (aplica-se so em PR story->develop/main e push p/ main, nunca em subtask nem push p/ develop).",
+            "Testar via PR real (subtask desta feature) - confirmar no gh run que o passo 5 recebe/nao recebe o wait flag conforme o evento, e que o passo 6 roda e reporta OK."
+          ],
+          "validation": "PR real com CI verde mostrando os 6 passos executando nas condicoes corretas (gh run view --log confirmando wait flag e passo 6).",
+          "owner": "agente"
+        },
+        {
+          "id": "feat-005.2",
+          "name": "CHANGELOG, verificacao final e revisao do vault",
+          "status": "not-started",
+          "jira": "SV-204",
+          "detail": "Fecha a feature e o epic-005 (raiz), junto com feat-006 - corrige tambem a afirmacao factualmente errada em docs/CI-CD.md sobre a cobertura do retrofit.",
+          "checklist": [
+            "Entrada em CHANGELOG.md (automatica, via tools/jira_story.py na criacao da issue).",
+            "./init.sh deste servico e da raiz rodando sem erro.",
+            "Delivery Reviewer rodado sobre o diff desta feature (ci.yml + script + doc).",
+            "docs/CI-CD.md linha ~194 corrigida: nao afirmar mais 'nos 6 repositorios de aplicacao' quando so 4 estao corrigidos ate este ponto (3 Java + telegram-integration) - apps/web permanece pendente, registrado como residual, nao corrigido aqui (fora do escopo deste servico).",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC 1) no mesmo commit."
+          ],
+          "validation": "init.sh verde, Delivery Reviewer sem achado real pendente, evidence preenchida, docs/CI-CD.md sem afirmacao falsa sobre cobertura do retrofit.",
+          "owner": "agente"
+        }
+      ],
       "evidence": ""
     },
     {

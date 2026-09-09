@@ -31,3 +31,6 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-199](https://stakevault.atlassian.net/browse/SV-199) - PendingBet com fase de catalogo (snapshot de opcoes) + orchestration.py (fuzzy match betting_house, pergunta numerada sport/league/market, catalogo vazio) + chaves i18n novas + testes
 - [SV-200](https://stakevault.atlassian.net/browse/SV-200) - bets_client.py (POST /api/v1/bets, conversao de bet_date pra Instant, Idempotency-Key via update_id) + n8n (telegramUpdateId) + mapeamento de outcomes + chaves i18n + testes
 - [SV-201](https://stakevault.atlassian.net/browse/SV-201) - CHANGELOG, verificacao final e revisao do vault (docs/services/telegram-integration.md, n8n/README.md - risco residual do update_id)
+- [SV-202](https://stakevault.atlassian.net/browse/SV-202) - Pipeline de CI (GitHub Actions + SonarCloud)
+- [SV-203](https://stakevault.atlassian.net/browse/SV-203) - Retrofit do gate de qualidade (qualitygate.wait + zero issue) no ci.yml
+- [SV-204](https://stakevault.atlassian.net/browse/SV-204) - CHANGELOG, verificacao final e revisao do vault
