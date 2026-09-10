@@ -9,7 +9,7 @@ from pathlib import Path
 SUPPORTED_LOCALES = ("pt-BR", "en-US", "es")
 DEFAULT_LOCALE = "pt-BR"
 
-_LOCALES_DIR = Path(__file__).resolve().parents[2] / "locales"
+_LOCALES_DIR = Path(__file__).resolve().parent / "locales"
 
 
 @lru_cache
