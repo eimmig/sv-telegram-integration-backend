@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from telegram_integration.auth_client import LinkOutcome
 from telegram_integration.main import app
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-Service-Key": "test-service-key"})
 
 
 @pytest.mark.parametrize(

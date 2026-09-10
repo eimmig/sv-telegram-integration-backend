@@ -40,3 +40,5 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-208](https://stakevault.atlassian.net/browse/SV-208) - CHANGELOG, verificacao final e fechamento de epic-005
 - [SV-284](https://stakevault.atlassian.net/browse/SV-284) - Dockerfile para imagem de producao
 - [SV-285](https://stakevault.atlassian.net/browse/SV-285) - Dockerfile multi-stage (uv + tesseract-ocr) + verificacao real do container contra a infra
+- [SV-290](https://stakevault.atlassian.net/browse/SV-290) - Autenticacao X-Service-Key + limite de corpo em POST /bets/capture e /telegram/link
+- [SV-291](https://stakevault.atlassian.net/browse/SV-291) - require_service_key (FastAPI dependency) + BodySizeLimitMiddleware + testes + workflow n8n + docs

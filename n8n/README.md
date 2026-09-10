@@ -92,13 +92,34 @@ produção.
 
 ## Outros residuais aceitos (reconfirmados em `feat-006`, 2026-09-08)
 
-Reavaliados sem mudança de código — nada mudou desde que foram aceitos nas features originais,
-continuam válidos até a condição que os motivou (containerização) acontecer de verdade:
-
-- **`POST /bets/capture` e `POST /telegram/link` sem autenticação própria nem limite de tamanho
-  de corpo** (aceito em `feat-002`/`feat-003`) — aceitável só enquanto o serviço roda em rede
-  local/interna, não containerizado/exposto. Revisitar quando este serviço for containerizado
-  (ver `feat-006` original, item reunido no checklist pré-deploy).
 - **`POST /api/v1/telegram-accounts` em `auth-service` sem rate limiting** (aceito em
   `telegram-integration feat-003`, mitigado por TTL curto do código de vínculo + espaço de busca
-  grande) — revisitar se `auth-service` for exposto além da rede interna.
+  grande) — continua válido: gatilho é `auth-service` exposto além da rede interna, e isso não
+  mudou (`infra/feat-004`/Kubernetes deixa esse serviço `ClusterIP`-only, sem `Ingress`).
+
+## `POST /bets/capture`/`POST /telegram/link` sem autenticação — resolvido (`feat-008`, 2026-09-10)
+
+O residual aceito em `feat-002`/`feat-003` ("aceitável só enquanto o serviço roda em rede
+local/interna, não containerizado/exposto — revisitar quando este serviço for containerizado")
+teve seu gatilho atingido: `infra/feat-004` (migração para Kubernetes) containerizou este
+serviço. Resolvido:
+
+- Os dois endpoints agora exigem o header `X-Service-Key` (dependência FastAPI
+  `require_service_key`, `services/telegram_integration/main.py`) — **mesmo segredo** já usado
+  pelas chamadas de saída deste serviço para `api-gateway` (`bets_client.py`/
+  `catalog_client.py`), não um novo. `401` sem o header ou com valor errado.
+- `telegram-bot.json`: os 2 nós `HTTP Request` (**Confirm link (Python)**, **Capture bet
+  (Python)**) ganharam `authentication: genericCredentialType`/`genericAuthType: httpHeaderAuth`,
+  referenciando uma credencial nova (`id: "2"`, `name: "X-Service-Key (StakeVault)"`) — **precisa
+  ser criada manualmente na instância do n8n** antes do workflow funcionar (mesmo precedente da
+  credencial `telegramApi` `id: "1"`, referenciada mas nunca embutida no JSON exportado, nunca
+  configurada nesta sessão por não haver bot real). Ao criar: tipo "Header Auth", nome do header
+  `X-Service-Key`, valor = o mesmo `SERVICE_KEY` configurado no `.env` deste serviço.
+- Limite de tamanho de corpo (10 MiB, generoso o bastante pra nunca rejeitar uma foto real de
+  bot do Telegram) via `BodySizeLimitMiddleware` (`body_size_limit.py`) — checa só
+  `Content-Length`, sem bufferizar o corpo inteiro; não protege contra corpo chunked sem esse
+  header, mas o único cliente real (nó `HTTP Request` do n8n) sempre o envia pra um corpo JSON.
+
+**Não resolvido, fora do escopo desta correção** (mesmo residual de sempre, não revalidado):
+credencial `telegramApi` nunca configurada nem testada contra a API real do Telegram — ver seção
+acima.
