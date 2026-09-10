@@ -352,3 +352,40 @@ atualizado no mesmo commit lógico: `docs/CONVENTIONS.md` (nova seção "Timezon
 `CLAUDE.md`, `feature_list.json`, `init.sh`, `progress.md`, `session-handoff.md` criados — sem
 código de aplicação ainda. Ver `../../docs/services/telegram-integration.md` para o fluxo
 completo.
+
+## `feat-007` — Dockerfile para imagem de produção (2026-09-10)
+
+Achado real de `infra/feat-004` (migração para Kubernetes, `epic-010` da raiz): este serviço
+nunca teve `Dockerfile` nem entrada no `docker-compose.yml` (só `n8n` estava provisionado ali).
+Decisão do usuário via `AskUserQuestion`: incluir este serviço no escopo agora, mesmo sem nunca
+ter passado por `docker-compose` antes.
+
+Multi-stage: build com `python:3.12-slim` + `uv` (`uv sync --frozen --no-dev --no-editable`,
+único `RUN` — ver abaixo), runtime também `python:3.12-slim` + `tesseract-ocr`/
+`tesseract-ocr-por` via `apt` (`pytesseract` chama o binário em runtime, não só em build, e o
+idioma fixo `por+eng` do código precisa do pacote de português além do inglês que já vem por
+padrão), usuário não-root, `CMD uvicorn --host 0.0.0.0 --port 8000` (não o entrypoint `main()` de
+dev em `__init__.py`, que usa `127.0.0.1`+`reload=True` de propósito, por um achado de segurança
+do SonarCloud já registrado desde `feat-001`). Build real e execução real testados contra a
+infra (`redis`, `auth-service`, `api-gateway` pelos nomes de host da rede): `GET /docs`/
+`GET /health` responderam 200.
+
+**Investigação real do gate de SonarCloud**, sem correção viável encontrada: `docker:S8541`
+sinalizou o `uv sync` por não ter `--no-build` (protege contra `sdist` malicioso de terceiro
+rodando `setup.py` arbitrário). Duas tentativas de correção, cada uma só trocou de achado em vez
+de resolver — `uv sync --no-install-project --no-build` (só terceiros) + segunda passada
+instalando o pacote próprio foi sinalizada pela mesma regra na segunda passada também (sem
+exceção pra pacote próprio buildado por backend confiável); construir o wheel à parte
+(`uv build`) e instalar via `uv pip install --no-deps --no-build <caminho>` trocou para
+`docker:S8544` ("using dependencies without locking resolved versions"), mesmo com o nome do
+arquivo fixo (não glob) — a regra não reconhece instalação por caminho de arquivo local como
+versão resolvida. Revertido para o `RUN` único original; achado marcado **Won't Fix** direto no
+SonarCloud (via API, com a mesma justificativa), único jeito do gate "zero issues"
+(`.github/scripts/validate-sonar-issues.py`, que só conta `OPEN`/`CONFIRMED`/`REOPENED`) parar de
+reprovar por um achado sem correção real dentro do próprio Dockerfile.
+
+Imagem usada de fato pelos manifests Kubernetes de `infra/feat-004`; `infra/docker-compose.yml`
+**não** foi alterado (nenhum dos 4 serviços Java também está lá — achado de auto-revisão,
+corrigido antes do commit final). 1 subtask (SV-285, story SV-284), 2 PRs (#28 subtask->feature,
+#29 feature->develop, este com 3 commits de correção/investigação do achado de SonarCloud antes
+de fechar), CI+SonarCloud verdes ao final.
