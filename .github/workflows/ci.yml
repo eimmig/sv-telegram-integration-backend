@@ -108,14 +108,20 @@ jobs:
           # expressao do GitHub Actions trata a string vazia do ramo verdadeiro como falsy, entao
           # o "||" sempre cai no fallback (o guard nunca desligava o wait em push p/ develop).
           # Corrigido invertendo a condicao pra o ramo verdadeiro nunca ser a string vazia.
+          #
+          # Achado real 3, mesma feature: o guard so cobria push p/ develop, mas a mesma causa
+          # raiz (primeira analise de uma branch longa nova sem leak period definido, API devolve
+          # "NONE" em vez de "OK"/"ERROR", plugin trata como reprovado) vale pra QUALQUER push
+          # direto, main incluso (main nunca tinha sido analisado antes desta feature). Ponto de
+          # bloqueio real sempre foi a PR - ampliado pra pular em todo push, nao so develop.
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.host.url=https://sonarcloud.io
-            ${{ !(github.event_name == 'push' && github.ref_name == 'develop') && '-Dsonar.qualitygate.wait=true' || '' }}
+            ${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}
 
-      # 6. Gate de issue/hotspot do SonarCloud - pulado em push p/ develop (API bloqueia branch != main)
+      # 6. Gate de issue/hotspot do SonarCloud - pulado em qualquer push direto (mesmo racional do passo 5)
       - name: Validar zero issues no SonarCloud
-        if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && !(github.event_name == 'push' && github.ref_name == 'develop')
+        if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && github.event_name != 'push'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
