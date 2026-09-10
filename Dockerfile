@@ -9,10 +9,13 @@ COPY src ./src
 # setup.py arbitrario). O pacote proprio nao pode usar a mesma flag (teria que ser "buildado"
 # de qualquer forma, nao existe wheel pre-pronto dele) - resolvido construindo o wheel deste
 # pacote a parte (uv_build, backend proprio deste projeto, nao setup.py arbitrario de terceiro)
-# e instalando so o wheel (sem build) na sequencia.
+# e instalando so o wheel (sem build) na sequencia. Nome de arquivo fixo (nao dist/*.whl) -
+# glob sem versao resolvida e sinalizado pelo SonarCloud (docker:S8544) como dependencia sem
+# versao travada; o pyproject.toml (name=telegram-integration, version=0.1.0) determina o nome
+# do wheel de forma deterministica (PEP 427 normaliza hifen para underscore).
 RUN uv sync --frozen --no-dev --no-install-project --no-build
 RUN uv build --wheel --out-dir dist \
-    && uv pip install --no-deps --no-build dist/*.whl
+    && uv pip install --no-deps --no-build dist/telegram_integration-0.1.0-py3-none-any.whl
 
 FROM python:3.12-slim
 RUN apt-get update \
