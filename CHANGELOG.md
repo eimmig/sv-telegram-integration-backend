@@ -38,3 +38,5 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-206](https://stakevault.atlassian.net/browse/SV-206) - Validar n8n/telegram-bot.json contra instancia n8n real (local, efemera)
 - [SV-207](https://stakevault.atlassian.net/browse/SV-207) - bet_date em America/Sao_Paulo + reconfirmar residuais de auth/rate-limit
 - [SV-208](https://stakevault.atlassian.net/browse/SV-208) - CHANGELOG, verificacao final e fechamento de epic-005
+- [SV-284](https://stakevault.atlassian.net/browse/SV-284) - Dockerfile para imagem de producao
+- [SV-285](https://stakevault.atlassian.net/browse/SV-285) - Dockerfile multi-stage (uv + tesseract-ocr) + verificacao real do container contra a infra
