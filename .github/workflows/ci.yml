@@ -103,10 +103,15 @@ jobs:
           # real (auth-service SV-30, retrofit aqui): sem isso o passo sempre passa mesmo com
           # o gate reprovado, porque o scanner so envia os dados e nao espera o processamento
           # assincrono do lado do SonarCloud. Ver docs/CI-CD.md.
+          #
+          # Achado real 2 (feat-009, 2026-09-10): a forma "cond && '' || flag" nunca funcionou -
+          # expressao do GitHub Actions trata a string vazia do ramo verdadeiro como falsy, entao
+          # o "||" sempre cai no fallback (o guard nunca desligava o wait em push p/ develop).
+          # Corrigido invertendo a condicao pra o ramo verdadeiro nunca ser a string vazia.
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.host.url=https://sonarcloud.io
-            ${{ (github.event_name == 'push' && github.ref_name == 'develop') && '' || '-Dsonar.qualitygate.wait=true' }}
+            ${{ !(github.event_name == 'push' && github.ref_name == 'develop') && '-Dsonar.qualitygate.wait=true' || '' }}
 
       # 6. Gate de issue/hotspot do SonarCloud - pulado em push p/ develop (API bloqueia branch != main)
       - name: Validar zero issues no SonarCloud
