@@ -42,3 +42,6 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-285](https://stakevault.atlassian.net/browse/SV-285) - Dockerfile multi-stage (uv + tesseract-ocr) + verificacao real do container contra a infra
 - [SV-290](https://stakevault.atlassian.net/browse/SV-290) - Autenticacao X-Service-Key + limite de corpo em POST /bets/capture e /telegram/link
 - [SV-291](https://stakevault.atlassian.net/browse/SV-291) - require_service_key (FastAPI dependency) + BodySizeLimitMiddleware + testes + workflow n8n + docs
+- [SV-331](https://stakevault.atlassian.net/browse/SV-331) - CI: build e push da imagem Docker pro GHCR
+- [SV-332](https://stakevault.atlassian.net/browse/SV-332) - Job build-and-push-image no ci.yml
+- [SV-333](https://stakevault.atlassian.net/browse/SV-333) - CHANGELOG e verificacao final
