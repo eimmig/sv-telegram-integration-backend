@@ -334,7 +334,7 @@
           ],
           "validation": "Push real em main confirmado no GitHub Actions (job verde) e imagem visivel no pacote do repositorio.",
           "owner": "agente",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-333"
         }
       ],
