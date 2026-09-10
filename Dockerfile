@@ -5,17 +5,19 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.7 /uv /uvx /bin/
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-# --no-build nas dependencias de terceiros (risco de supply chain - sdist malicioso rodando
-# setup.py arbitrario). O pacote proprio nao pode usar a mesma flag (teria que ser "buildado"
-# de qualquer forma, nao existe wheel pre-pronto dele) - resolvido construindo o wheel deste
-# pacote a parte (uv_build, backend proprio deste projeto, nao setup.py arbitrario de terceiro)
-# e instalando so o wheel (sem build) na sequencia. Nome de arquivo fixo (nao dist/*.whl) -
-# glob sem versao resolvida e sinalizado pelo SonarCloud (docker:S8544) como dependencia sem
-# versao travada; o pyproject.toml (name=telegram-integration, version=0.1.0) determina o nome
-# do wheel de forma deterministica (PEP 427 normaliza hifen para underscore).
-RUN uv sync --frozen --no-dev --no-install-project --no-build
-RUN uv build --wheel --out-dir dist \
-    && uv pip install --no-deps --no-build dist/telegram_integration-0.1.0-py3-none-any.whl
+# SonarCloud (docker:S8541) sinaliza esta linha por nao ter --no-build (protege contra sdist
+# malicioso rodando setup.py arbitrario em dependencia de terceiro). --no-build nao da pra usar
+# aqui de verdade: o pacote proprio nao tem wheel pre-pronto e teria que ser "buildado" de
+# qualquer forma (uv_build, backend deste projeto - nao setup.py de terceiro, sem o risco que a
+# regra mira). Tentativa de contornar construindo o wheel a parte e instalando-o depois
+# (RUN uv build --wheel && uv pip install --no-deps --no-build dist/<nome-fixo>.whl) so trocou
+# de achado: SonarCloud passou a reportar docker:S8544 ("using dependencies without locking
+# resolved versions") no install de um caminho de arquivo local, pinado ou nao - a regra nao
+# reconhece instalacao por path local como "resolvida", so instalacao por nome+versao de
+# registry. Sem alternativa real dentro do proprio Dockerfile - achado marcado Won't Fix no
+# SonarCloud com esta justificativa (ver evidence de feat-007 em feature_list.json deste
+# repositorio).
+RUN uv sync --frozen --no-dev --no-editable
 
 FROM python:3.12-slim
 RUN apt-get update \
