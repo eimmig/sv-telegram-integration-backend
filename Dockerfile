@@ -5,6 +5,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.7 /uv /uvx /bin/
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+# --no-build so nas dependencias de terceiros (risco de supply chain - sdist malicioso
+# rodando setup.py arbitrario); o pacote proprio (fonte confiavel, mesmo repositorio) e
+# instalado numa segunda passada, ja com as dependencias resolvidas.
+RUN uv sync --frozen --no-dev --no-install-project --no-build
 RUN uv sync --frozen --no-dev --no-editable
 
 FROM python:3.12-slim
