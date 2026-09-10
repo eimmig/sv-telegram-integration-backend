@@ -389,3 +389,42 @@ Imagem usada de fato pelos manifests Kubernetes de `infra/feat-004`; `infra/dock
 corrigido antes do commit final). 1 subtask (SV-285, story SV-284), 2 PRs (#28 subtask->feature,
 #29 feature->develop, este com 3 commits de correção/investigação do achado de SonarCloud antes
 de fechar), CI+SonarCloud verdes ao final.
+
+## `feat-008` — autenticação X-Service-Key + limite de corpo (2026-09-10, mesmo dia)
+
+Residual aceito desde `feat-002`/`feat-003`, documentado em `n8n/README.md` com gatilho
+explícito: "aceitável só enquanto o serviço roda em rede local/interna, não
+containerizado/exposto. Revisitar quando este serviço for containerizado". `infra/feat-004`
+(mesma sessão) acabou de containerizar este serviço — gatilho atingido. Usuário decidiu
+resolver agora, via `AskUserQuestion`, em vez de só registrar o gap.
+
+`require_service_key` (dependência FastAPI, `main.py`) exige `X-Service-Key` nos dois
+endpoints (`POST /bets/capture`, `POST /telegram/link`) — **mesmo segredo** já usado pelas
+chamadas de saída deste serviço para `api-gateway` (`bets_client.py`/`catalog_client.py`), não
+um novo. `/health` fica de fora (health check do Kubernetes não autentica).
+`BodySizeLimitMiddleware` rejeita corpo acima de 10 MiB via `Content-Length`, sem bufferizar.
+`telegram-bot.json`: os 2 nós `HTTP Request` ganharam `authentication: genericCredentialType`/
+`httpHeaderAuth`, referenciando uma credencial nova (`id: "2"`) que precisa ser criada
+manualmente na instância do n8n — mesmo precedente da credencial `telegramApi` (`id: "1"`),
+nunca embutida no JSON exportado.
+
+**Achado real, descoberto testando a imagem reconstruída pela primeira vez com dado de
+verdade** (não coberto por nenhum teste unitário, que sempre rodam em modo editable):
+`locales/{pt-BR,en-US,es}.json` na raiz do repositório nunca era instalado junto com o pacote —
+`i18n.py` resolvia o caminho via `Path(__file__).parents[2]`, que só aponta pro lugar certo em
+install editable (`uv sync` sem `--no-editable`, o modo usado em desenvolvimento local/testes).
+Qualquer resposta que precisasse de `get_message()` quebrava com `500`
+(`FileNotFoundError`) numa imagem de produção real — só apareceu ao testar o container `docker
+run` de verdade, não em `pytest` nem em `mvnw`-equivalente algum. Corrigido movendo os 3
+arquivos para `src/telegram_integration/locales/` (dentro do pacote — caminho relativo ao
+próprio módulo funciona em qualquer modo de instalação, editable ou não).
+`.github/workflows/ci.yml` (guarda + `validate-i18n-keys.py`), `CLAUDE.md`,
+`docs/CONVENTIONS.md` e `docs/services/telegram-integration.md` (raiz) atualizados no mesmo
+commit lógico.
+
+7 testes novos (`test_service_key_auth.py`), 3 arquivos de teste existentes atualizados pra
+enviar o header (não quebrar com a auth nova). 93 testes, 0 falhas, cobertura 100% (gate 80%).
+ruff/mypy limpos. Verificação real contra o container reconstruído (não só `pytest`): 401 sem
+header, 401 com header errado, 200 com header correto — confirmado também de dentro do cluster
+Kubernetes (`kubectl run` de um pod efêmero). 1 subtask (SV-291, story SV-290), 2 PRs (#30
+subtask->feature, #31 feature->develop), CI+SonarCloud verdes nos dois de primeira.

@@ -1,69 +1,56 @@
 # Session Handoff — telegram-integration
 
-## Current Objective
+> Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
+> a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-- Goal: `epic-005` (telegram-integration) — `feat-001`..`feat-006` entregues. Backlog atual deste
-  serviço está completo; `epic-005` fecha na raiz junto com esta feature.
-- Current status: `feat-006` `done`, merged into `develop`.
-- Branch / commit: `develop` (a atualizar após o merge de `feature/SV-205`).
+**Última atualização:** 2026-09-10
 
-## Completed This Session
+## Objetivo atual
 
-- [x] `feat-006` (Checklist de validação pré-deploy): validação real de `n8n/telegram-bot.json`
-      contra uma instância n8n de verdade (local, efêmera) + correção de `bet_date` para
-      `America/Sao_Paulo`. Ver `progress.md` para o detalhe completo.
-- [x] `docs/CONVENTIONS.md` (raiz): nova seção "Timezone padrão" — primeira convenção de
-      timezone do projeto.
+- **Todas as 8 features deste harness estão `done`** (`feat-001..008`). `epic-005` da raiz já
+  era `done`; `feat-007`/`feat-008` são addendums pós-fechamento (Dockerfile + auth, achados de
+  `infra/feat-004`/migração Kubernetes). Nenhum trabalho pendente neste harness.
+
+## Concluído nesta sessão (2026-09-10)
+
+- [x] `feat-007` (Dockerfile) — ver `progress.md` para o detalhe (investigação do gate de
+      SonarCloud, marcado Won't Fix).
+- [x] `feat-008` (autenticação `X-Service-Key` + limite de corpo) — gatilho documentado desde
+      `feat-002`/`feat-003` ("revisitar quando containerizado") atingido por `feat-007`/
+      `infra/feat-004`. Ver `progress.md` para o detalhe completo, incluindo um achado real
+      (bug de i18n em produção, `locales/` nunca instalado com o pacote) descoberto testando a
+      imagem reconstruída.
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Build/test | `uv run pytest --cov --cov-fail-under=80` | 86 tests, 0 failures, 100% coverage | precisa `TESSDATA_PREFIX`/`TESSERACT_CMD` no ambiente (ver "Blockers / Risks") |
+| Build/test | `uv run pytest --cov` | 93 passed, 100% | |
+| Lint/types | `ruff check` / `mypy` | limpos | |
 | Local harness | `./init.sh` | pass | |
-| Root harness | `../../init.sh` | pass (exit 0) | item informativo de sub-harness reportou FAIL só por env não herdado em job background, não defeito real |
-| CI (subtask gate) | GitHub Actions | pass | PR #25 (n8n validation), PR #26 (timezone fix) |
-| Plan Reviewer | review-suite skill | REVISE -> corrigido antes de codificar | achado real: infra/ já tinha n8n provisionado, não era decisão pendente do usuário |
-| Delivery Reviewer | review-suite skill | PASS | nenhum achado P0-P2 |
-
-## Decisions Made
-
-- Instância n8n de teste: `infra/docker-compose.yml` já provisiona o serviço `n8n` desde
-  `epic-001` — usada localmente (efêmera, `.env` não commitado, derrubada ao final da subtask),
-  não uma instância permanente nova. Validação sem bot Telegram real: schema de nós via
-  `GET /types/nodes.json` da própria API do n8n, comportamento de runtime lendo o código-fonte
-  real dos nodes `Telegram`/`TelegramTrigger` dentro do container.
-- `bet_date` default: `America/Sao_Paulo` em vez de UTC (decisão do usuário via
-  `AskUserQuestion`) — primeira convenção de timezone do projeto, `docs/CONVENTIONS.md`.
-- `tzdata` adicionado como dependência explícita — `zoneinfo` (stdlib) não tem banco IANA
-  embutido no Windows.
+| CI (subtask+full gate) | GitHub Actions + SonarCloud | pass | PRs #30/#31 verdes de primeira |
+| Container real | `docker run` + `curl` | 401/401/200 conforme esperado | também testado de dentro do cluster kind |
 
 ## Blockers / Risks
 
-- Nenhum bloqueante no backlog atual deste serviço (`feat-001`..`feat-006` todas `done`).
-- `POST /bets/capture`, `POST /telegram/link` e `POST /api/v1/telegram-accounts` (auth-service)
-  sem autenticação própria/rate limiting/limite de corpo — residual aceito, reconfirmado em
-  `feat-006`, revisitar quando este serviço for containerizado.
-- Credencial `telegramApi` (token do BotFather) nunca configurada — fluxo ponta a ponta com um
-  bot Telegram real continua não exercitado (ver `n8n/README.md`).
-- Ambiente de desenvolvimento: `TESSDATA_PREFIX=/c/Users/eduar/AppData/Local/tessdata` e
-  `TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"` precisam estar no ambiente pro
-  `./init.sh` passar — persistidos via `setx` para sessões futuras, mas sessões Bash novas às
-  vezes não herdam (confirmar com `echo $TESSDATA_PREFIX` antes de rodar `./init.sh`; se vazio,
-  exportar manualmente).
+- **Ação manual pendente, fora do escopo de código**: a credencial `httpHeaderAuth` (`id: "2"`,
+  `X-Service-Key (StakeVault)`) referenciada em `n8n/telegram-bot.json` precisa ser criada à mão
+  na instância real do n8n (tipo "Header Auth", header `X-Service-Key`, valor = `SERVICE_KEY`
+  do `.env` deste serviço) antes do workflow importado funcionar de ponta a ponta — mesmo
+  precedente da credencial `telegramApi` (`id: "1"`), nunca configurada nesta sessão por não
+  haver bot real.
+- Credencial `telegramApi` (token do BotFather) continua nunca configurada nem testada contra a
+  API real do Telegram — residual antigo, sem mudança nesta sessão.
 
 ## Next Session Startup
 
-1. Read `../../CLAUDE.md` e `../../docs/services/telegram-integration.md`.
-2. Read this directory's `CLAUDE.md`, `feature_list.json`, `progress.md`.
-3. Run `./init.sh` — exportar `TESSDATA_PREFIX`/`TESSERACT_CMD` (ver "Blockers / Risks") se a
-   sessão não herdar do ambiente persistido.
-4. Backlog atual deste serviço está completo (`feat-001`..`feat-006` `done`). Não há feature
-   elegível em `feature_list.json` deste serviço no momento — próximo trabalho depende de novo
-   backlog ser definido ou de outro epic da raiz.
+1. Ler `../../CLAUDE.md` e o `CLAUDE.md` deste serviço.
+2. `feature_list.json` deste harness: todas as features `done` (`feat-001..008`). Nenhum
+   trabalho pendente aqui até surgir novo achado.
+3. Rodar `./init.sh` (deve passar).
 
 ## Recommended Next Step
 
-- Nenhum item elegível neste serviço. Verificar `../../feature_list.json` (raiz) para outros
-  epics `not-started` cujas dependências já estejam `done`, ou aguardar novo backlog para
-  `telegram-integration` (ex.: containerização, que revisitaria os residuais de auth/rate-limit).
+- Nenhum. Se algum dia houver um bot Telegram real disponível: criar a credencial
+  `httpHeaderAuth` pendente + testar o fluxo completo ponta a ponta (residual documentado acima
+  e em `n8n/README.md`).
