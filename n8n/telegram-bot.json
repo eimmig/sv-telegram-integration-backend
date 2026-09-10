@@ -76,10 +76,18 @@
       "parameters": {
         "method": "POST",
         "url": "http://localhost:8000/telegram/link",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"code\": $json.code } }}",
         "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "X-Service-Key (StakeVault)"
+        }
       }
     },
     {
@@ -196,10 +204,18 @@
       "parameters": {
         "method": "POST",
         "url": "http://localhost:8000/bets/capture",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"telegramUserId\": $json.telegramUserId, \"languageCode\": $json.languageCode, \"chatId\": $json.chatId, \"text\": $json.text, \"photoBase64\": $json.photoBase64, \"telegramUpdateId\": $json.telegramUpdateId } }}",
         "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "X-Service-Key (StakeVault)"
+        }
       }
     },
     {

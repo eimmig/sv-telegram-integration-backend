@@ -36,12 +36,15 @@ jobs:
         # pyproject.toml nasce antes de locales/ existir - guardar so por pyproject.toml
         # quebraria o PR da subtask de bootstrap por sequenciamento, nao por defeito real
         # (mesma armadilha ja documentada em docs/CI-CD.md, corrigida proativamente aqui).
-        if: hashFiles('locales/pt-BR.json') != ''
+        # Caminho movido para dentro do pacote (feat-008, 2026-09-10): o antigo locales/ na
+        # raiz do repositorio nunca era instalado com o pacote (path relativo em i18n.py so
+        # funcionava com install editable) - achado real testando o container de producao.
+        if: hashFiles('src/telegram_integration/locales/pt-BR.json') != ''
         run: |
           python3 .github/scripts/validate-i18n-keys.py --format json \
-            --file pt-BR=locales/pt-BR.json \
-            --file en-US=locales/en-US.json \
-            --file es=locales/es.json
+            --file pt-BR=src/telegram_integration/locales/pt-BR.json \
+            --file en-US=src/telegram_integration/locales/en-US.json \
+            --file es=src/telegram_integration/locales/es.json
 
       - name: Instalar uv
         # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com

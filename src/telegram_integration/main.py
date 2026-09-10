@@ -1,19 +1,43 @@
 import base64
+import os
 import uuid
 from typing import Annotated, Literal
 
 import redis
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from telegram_integration.auth_client import LinkOutcome, confirm_telegram_link
 from telegram_integration.bets_client import SubmitOutcome, submit_bet
+from telegram_integration.body_size_limit import BodySizeLimitMiddleware
 from telegram_integration.conversation import build_redis_client, clear_pending
 from telegram_integration.i18n import get_message
 from telegram_integration.ocr import extract_text
 from telegram_integration.orchestration import handle_message
 
 app = FastAPI(title="telegram-integration")
+# 10 MiB: photoBase64 carries a Telegram bot photo (compressed by the Bot API) - well above any
+# real message, generous enough to never reject a legitimate one.
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
+
+
+def _expected_service_key() -> str:
+    return os.environ.get("SERVICE_KEY", "")
+
+
+def require_service_key(x_service_key: Annotated[str | None, Header()] = None) -> None:
+    """n8n -> this service, same X-Service-Key credential already used for this
+    service's own outbound calls to api-gateway (bets_client.py/catalog_client.py) -
+    not a new secret. Was accepted as unauthenticated while the service only ran on
+    the host, unexposed (see services/telegram-integration/n8n/README.md); now that
+    it's containerized (infra/feat-004), the documented trigger for revisiting it
+    is met.
+    """
+    expected = _expected_service_key()
+    if not expected or x_service_key != expected:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or missing X-Service-Key"
+        )
 
 _LINK_OUTCOME_MESSAGE_KEY = {
     LinkOutcome.SUCCESS: "link_success",
@@ -95,7 +119,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/bets/capture")
+@app.post("/bets/capture", dependencies=[Depends(require_service_key)])
 def capture_bet(
     payload: NormalizedMessage,
     client: Annotated[redis.Redis, Depends(get_redis_client)],
@@ -131,7 +155,7 @@ def capture_bet(
     )
 
 
-@app.post("/telegram/link")
+@app.post("/telegram/link", dependencies=[Depends(require_service_key)])
 def link_account(payload: LinkAccountRequest) -> LinkAccountResponse:
     correlation_id = str(uuid.uuid4())
     outcome = confirm_telegram_link(payload.telegram_user_id, payload.code, correlation_id)

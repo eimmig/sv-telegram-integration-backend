@@ -43,7 +43,7 @@ def redis_client() -> Iterator[redis.Redis]:
 
 @pytest.fixture
 def client(redis_client: redis.Redis) -> TestClient:
-    return TestClient(app)
+    return TestClient(app, headers={"X-Service-Key": "test-service-key"})
 
 
 def _render_text_image(text: str) -> str:

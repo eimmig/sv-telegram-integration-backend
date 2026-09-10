@@ -45,8 +45,11 @@ decididos em `../../docs/CONVENTIONS.md`, `../../docs/TESTING.md` e
   campo `language_code` que o próprio update do Telegram já traz — ver
   `../../docs/CONVENTIONS.md` seção "Internacionalização (i18n)". Nenhuma mensagem do bot é
   hardcoded num idioma só. Formato **JSON**, um arquivo por locale em
-  `locales/{pt-BR,en-US,es}.json` (decisão fechada em 2026-08-02, ver
-  `../../docs/DECISIONS-LOG.md`) — validado automaticamente pela pipeline de CI (bullet abaixo).
+  `src/telegram_integration/locales/{pt-BR,en-US,es}.json` (decisão fechada em 2026-08-02, ver
+  `../../docs/DECISIONS-LOG.md`; caminho movido pra dentro do pacote em `feat-008`,
+  2026-09-10 — o antigo `locales/` na raiz do repositório nunca era instalado junto com o
+  pacote, só funcionava em install editable, achado real testando o container de produção) —
+  validado automaticamente pela pipeline de CI (bullet abaixo).
 - Fluxos do n8n (webhook do Telegram → normalização → chamada ao script Python) devem ser
   exportados como JSON versionado neste diretório (ex.: `n8n/telegram-bot.json`), não deixados
   apenas na instância online do n8n.
