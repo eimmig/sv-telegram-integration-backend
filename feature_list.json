@@ -289,6 +289,56 @@
         }
       ],
       "evidence": "Fechada em 2026-09-10. require_service_key (dependencia FastAPI, main.py) valida X-Service-Key contra o mesmo SERVICE_KEY ja usado nas chamadas de saida - aplicada via 'dependencies=[Depends(...)]' nos 2 endpoints, 401 sem header/com valor errado; /health fica de fora (health check do Kubernetes nao autentica). BodySizeLimitMiddleware (body_size_limit.py) rejeita corpo acima de 10 MiB (413) checando so Content-Length, sem bufferizar. telegram-bot.json: os 2 nos HTTP Request (Confirm link, Capture bet) ganharam authentication=genericCredentialType/httpHeaderAuth referenciando uma credencial nova (id 2, 'X-Service-Key (StakeVault)') - precisa ser criada manualmente na instancia do n8n, mesmo precedente da credencial telegramApi (id 1). 7 testes novos (test_service_key_auth.py: header ausente/errado/correto nos 2 endpoints, /health sem auth, corpo grande rejeitado) + 3 arquivos de teste existentes atualizados pra enviar o header (nao quebrar com a auth nova). 93 testes, 0 falhas, cobertura 100% (gate 80%). ruff/mypy limpos. Build real da imagem + testes reais contra o container (nao so unit test): 401 sem header, 401 com header errado, 200 com header correto - confirmado tambem de dentro do cluster Kubernetes (pod efemero via kubectl run). Achado real descoberto testando o container de producao pela primeira vez com dado de verdade (nao coberto por nenhum teste unitario, que sempre rodam em modo editable): locales/{pt-BR,en-US,es}.json na raiz do repositorio nunca era instalado junto com o pacote (i18n.py resolvia o caminho via Path(__file__).parents[2], que so aponta pro lugar certo em install editable) - qualquer resposta que precisasse de get_message() quebrava com 500 (FileNotFoundError) numa imagem de producao real. Corrigido movendo os 3 arquivos para src/telegram_integration/locales/ (dentro do pacote, path relativo ao proprio modulo funciona em qualquer modo de instalacao) - .github/workflows/ci.yml (guarda + validate-i18n-keys.py), CLAUDE.md, docs/CONVENTIONS.md e docs/services/telegram-integration.md (raiz) atualizados no mesmo commit logico. n8n/README.md atualizado: residual resolvido documentado, credencial nova a criar manualmente, mesmo precedente de telegramApi nunca configurada. Imagem final validada de ponta a ponta contra o cluster Kubernetes de infra/feat-004."
+    },
+    {
+      "id": "feat-009",
+      "name": "CI: build e push da imagem Docker pro GHCR",
+      "goal": "Publicar a imagem deste servico em ghcr.io/eimmig/sv-telegram-integration-backend a cada push estavel em main, pra viabilizar deploy real fora do cluster kind local.",
+      "scope": [
+        "Job novo build-and-push-image no ci.yml, condicionado a pipeline (todos os passos de qualidade) ja ter passado e a branch ser main",
+        "Nao inclui gerar o PAT/imagePullSecrets do cluster que vai consumir a imagem - isso e acao no lado do servidor de deploy, fora deste repositorio"
+      ],
+      "description": "Ate agora a imagem deste servico so existia como ghcr.io/eimmig/sv-telegram-integration-backend:local, carregada manualmente num cluster kind de teste (infra/feat-004, epic-010 da raiz). Sem publicar num registry, nao ha como um servidor de producao real puxar essa imagem. Job novo no ci.yml: docker/setup-buildx-action + docker/login-action (ghcr.io, github.actor/secrets.GITHUB_TOKEN) + docker/build-push-action, tags <sha> e latest, needs: pipeline, if restrito a push em main.",
+      "dependencies": [
+        "feat-007"
+      ],
+      "status": "in-progress",
+      "plan_review": "2026-09-10, Plan Reviewer (review-suite:ln-11-plan-reviewer) - READY WITH CONCERNS. Achados: MAJOR - packages: write no permissions do job so e concedido se o repositorio tiver 'Workflow permissions' = Read and write em Settings > Actions > General (default de repositorio novo costuma vir restrito a leitura, e nesse caso o job-level permissions e limitado silenciosamente, push falha com 403 em vez de erro de sintaxe) - verificar/configurar antes do primeiro push em main. MINOR (confirmado contra a documentacao oficial do docker/build-push-action) - nao obrigatorio mas recomendado adicionar docker/setup-buildx-action antes do build, incluido no plano corrigido. Escopo confirmado: PAT/imagePullSecrets do cluster de deploy fica fora desta feature.",
+      "jira": "SV-331",
+      "subtasks": [
+        {
+          "id": "feat-009.1",
+          "name": "Job build-and-push-image no ci.yml",
+          "detail": "Publica a imagem no GHCR so depois da pipeline de qualidade inteira ja ter passado, so na branch main - nunca em PR/subtask, pra nao pushar imagem de codigo nao revisado.",
+          "checklist": [
+            "docker/setup-buildx-action antes do login/build",
+            "docker/login-action contra ghcr.io com github.actor + secrets.GITHUB_TOKEN",
+            "docker/build-push-action com tags <sha> e latest",
+            "needs: pipeline + if restrito a push em main",
+            "permissions do job: contents: read, packages: write"
+          ],
+          "validation": "Push em main dispara o job, imagem aparece em ghcr.io/eimmig/sv-telegram-integration-backend (packages do repositorio) com as 2 tags.",
+          "owner": "agente",
+          "status": "done",
+          "jira": "SV-332"
+        },
+        {
+          "id": "feat-009.2",
+          "name": "CHANGELOG e verificacao final",
+          "detail": "Fechamento formal: CHANGELOG.md, init.sh, confirmar que o Workflow permissions do repositorio permite packages: write (achado do Plan Reviewer), e o item fixo de vault desta feature.",
+          "checklist": [
+            "Entrada em CHANGELOG.md (Unreleased)",
+            "./init.sh do servico e da raiz verdes",
+            "Settings > Actions > General > Workflow permissions = Read and write confirmado neste repositorio",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC1) no mesmo commit"
+          ],
+          "validation": "Push real em main confirmado no GitHub Actions (job verde) e imagem visivel no pacote do repositorio.",
+          "owner": "agente",
+          "status": "not-started",
+          "jira": "SV-333"
+        }
+      ],
+      "evidence": ""
     }
   ]
 }
