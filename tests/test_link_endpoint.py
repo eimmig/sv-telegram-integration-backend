@@ -58,4 +58,5 @@ def test_link_account_passes_telegram_user_id_and_code_to_auth_client(
     assert response.status_code == 200
     assert captured["telegram_user_id"] == "999"
     assert captured["code"] == "ABCD1234"
-    assert isinstance(captured["correlation_id"], str) and captured["correlation_id"]
+    assert isinstance(captured["correlation_id"], str)
+    assert captured["correlation_id"]
