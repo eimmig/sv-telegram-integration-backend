@@ -302,7 +302,7 @@
       "dependencies": [
         "feat-007"
       ],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-10, Plan Reviewer (review-suite:ln-11-plan-reviewer) - READY WITH CONCERNS. Achados: MAJOR - packages: write no permissions do job so e concedido se o repositorio tiver 'Workflow permissions' = Read and write em Settings > Actions > General (default de repositorio novo costuma vir restrito a leitura, e nesse caso o job-level permissions e limitado silenciosamente, push falha com 403 em vez de erro de sintaxe) - verificar/configurar antes do primeiro push em main. MINOR (confirmado contra a documentacao oficial do docker/build-push-action) - nao obrigatorio mas recomendado adicionar docker/setup-buildx-action antes do build, incluido no plano corrigido. Escopo confirmado: PAT/imagePullSecrets do cluster de deploy fica fora desta feature.",
       "jira": "SV-331",
       "subtasks": [
@@ -352,7 +352,7 @@
           "jira": "SV-337"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-10. Job build-and-push-image no ci.yml publicando de verdade em ghcr.io/eimmig/sv-telegram-integration-backend - confirmado via log real (containerimage.digest: sha256:34e651b...). Primeiro develop->main de verdade deste repositorio (main so tinha o commit de bootstrap), o que expos 3 achados reais pre-existentes/de guard nao previstos no Plan Review (feat-009.3): issue pre-existente python:S9073 (assercao composta) num teste de feat-003; guard de sonar.qualitygate.wait que nunca funcionou de verdade (expressao GitHub Actions 'cond && \"\" || flag' trata string vazia como falsy); e o mesmo guard, corrigido, ainda so cobria push pra develop, ampliado pra qualquer push direto (primeira analise de uma branch longa sem leak period faz a API devolver status NONE, tratado como reprovado). Delivery Reviewer: CONCERNS -> PASS depois de confirmado o push real. Workflow permissions do repositorio confirmado 'Read and write'. ./init.sh do servico e da raiz verdes. docs/CI-CD.md atualizado com os achados."
     }
   ]
 }
