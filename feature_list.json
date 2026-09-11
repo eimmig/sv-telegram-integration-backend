@@ -336,6 +336,20 @@
           "owner": "agente",
           "status": "done",
           "jira": "SV-333"
+        },
+        {
+          "id": "feat-009.3",
+          "name": "Achados reais no primeiro develop->main de verdade deste repositorio",
+          "detail": "Este repositorio nunca tinha feito develop->main antes desta feature (main so tinha o commit de bootstrap) - a janela de 'new code' do SonarCloud cobriu todo o historico acumulado, expondo 3 achados reais nao previstos no Plan Review original: (1) issue pre-existente python:S9073 (assercao composta) num teste de feat-003, corrigida inline; (2) guard que deveria pular sonar.qualitygate.wait em push direto pra develop nunca funcionou de verdade - expressao do GitHub Actions no formato 'cond && \"\" || flag' trata string vazia como falsy, o '||' sempre caia no flag; (3) mesmo guard, mesmo depois de corrigido, so cobria push pra develop - a mesma causa raiz (primeira analise de uma branch longa sem leak period, API devolve status NONE tratado como reprovado) tambem vale pra main.",
+          "checklist": [
+            "tests/test_link_endpoint.py:61 - assercao composta separada em duas",
+            "Expressao ternaria do guard invertida pra nunca produzir string vazia no ramo verdadeiro",
+            "Guard ampliado de 'push para develop' para qualquer push direto (github.event_name == 'push')"
+          ],
+          "validation": "SonarCloud Code Analysis verde no PR develop->main; push real em main sem reprovar o quality gate.",
+          "owner": "agente",
+          "status": "done",
+          "jira": "SV-337"
         }
       ],
       "evidence": ""

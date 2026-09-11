@@ -45,3 +45,4 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-331](https://stakevault.atlassian.net/browse/SV-331) - CI: build e push da imagem Docker pro GHCR
 - [SV-332](https://stakevault.atlassian.net/browse/SV-332) - Job build-and-push-image no ci.yml
 - [SV-333](https://stakevault.atlassian.net/browse/SV-333) - CHANGELOG e verificacao final
+- [SV-337](https://stakevault.atlassian.net/browse/SV-337) - Achados reais no primeiro develop->main de verdade deste repositorio
