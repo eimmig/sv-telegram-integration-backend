@@ -15,9 +15,14 @@ jobs:
 
       # 1. Changelog - ver docs/CI-CD.md (vault local, nao versionado neste repo)
       - name: Validar atualizacao do CHANGELOG.md
-        # Todo PR valida, inclusive subtask -> branch da story: cada subtarefa adiciona a
-        # propria linha em [Unreleased], que se acumula ate o merge em develop.
-        if: github.event_name == 'pull_request'
+        # So no PR story -> develop/main, ver docs/CI-CD.md "Quais passos rodam em qual PR":
+        # a linha de cada subtask nasce (via jira_story.py) antes da branch daquela subtask
+        # existir, entao o diff de uma PR subtask/ -> story nunca toca CHANGELOG.md por
+        # sequenciamento, nao por esquecimento real - exigir o toque tambem ali quebraria
+        # todo PR de subtask. Achado real: este workflow nunca recebeu esta correcao desde o
+        # bootstrap do epic-009, mesma armadilha ja documentada e corrigida nos outros 6
+        # repositorios de aplicacao.
+        if: github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main')
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -26,15 +31,20 @@ jobs:
       # 2. Chaves de traducao - ver docs/CONVENTIONS.md secao "Internacionalizacao (i18n)"
       # Formato JSON (decisao registrada em docs/DECISIONS-LOG.md - vault local)
       - name: Validar chaves de traducao (pt-BR/en-US/es)
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
-        if: hashFiles('pyproject.toml') != ''
+        # Guarda propria (locales/pt-BR.json), independente do pyproject.toml que guarda os
+        # passos 3-5: feat-001 deste servico foi dividida em subtasks incrementais e
+        # pyproject.toml nasce antes de locales/ existir - guardar so por pyproject.toml
+        # quebraria o PR da subtask de bootstrap por sequenciamento, nao por defeito real
+        # (mesma armadilha ja documentada em docs/CI-CD.md, corrigida proativamente aqui).
+        # Caminho movido para dentro do pacote (feat-008, 2026-09-10): o antigo locales/ na
+        # raiz do repositorio nunca era instalado com o pacote (path relativo em i18n.py so
+        # funcionava com install editable) - achado real testando o container de producao.
+        if: hashFiles('src/telegram_integration/locales/pt-BR.json') != ''
         run: |
           python3 .github/scripts/validate-i18n-keys.py --format json \
-            --file pt-BR=locales/pt-BR.json \
-            --file en-US=locales/en-US.json \
-            --file es=locales/es.json
+            --file pt-BR=src/telegram_integration/locales/pt-BR.json \
+            --file en-US=src/telegram_integration/locales/en-US.json \
+            --file es=src/telegram_integration/locales/es.json
 
       - name: Instalar uv
         # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
@@ -62,6 +72,12 @@ jobs:
           uv run ruff check .
 
       # 4. Testes unitarios + cobertura
+      - name: Instalar Tesseract OCR (feat-002 - extracao de bilhete via foto)
+        # Guarda propria por ocr.py (existe a partir de feat-002.2) - sem isso o teste de
+        # OCR falha com "tesseract is not installed" no runner, que nao tem o binario por
+        # padrao (so pip instala o wrapper Python, nao o motor de OCR em si).
+        if: hashFiles('src/telegram_integration/ocr.py') != ''
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-por
       - name: Testes unitarios e cobertura
         # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
         # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
@@ -82,6 +98,62 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # sonar.qualitygate.wait pulado so em push direto p/ develop - mesma causa raiz do
+          # passo 6 (API do plano gratuito recusa computar gate pra branch != main). Achado
+          # real (auth-service SV-30, retrofit aqui): sem isso o passo sempre passa mesmo com
+          # o gate reprovado, porque o scanner so envia os dados e nao espera o processamento
+          # assincrono do lado do SonarCloud. Ver docs/CI-CD.md.
+          #
+          # Achado real 2 (feat-009, 2026-09-10): a forma "cond && '' || flag" nunca funcionou -
+          # expressao do GitHub Actions trata a string vazia do ramo verdadeiro como falsy, entao
+          # o "||" sempre cai no fallback (o guard nunca desligava o wait em push p/ develop).
+          # Corrigido invertendo a condicao pra o ramo verdadeiro nunca ser a string vazia.
+          #
+          # Achado real 3, mesma feature: o guard so cobria push p/ develop, mas a mesma causa
+          # raiz (primeira analise de uma branch longa nova sem leak period definido, API devolve
+          # "NONE" em vez de "OK"/"ERROR", plugin trata como reprovado) vale pra QUALQUER push
+          # direto, main incluso (main nunca tinha sido analisado antes desta feature). Ponto de
+          # bloqueio real sempre foi a PR - ampliado pra pular em todo push, nao so develop.
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.host.url=https://sonarcloud.io
+            ${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}
+
+      # 6. Gate de issue/hotspot do SonarCloud - pulado em qualquer push direto (mesmo racional do passo 5)
+      - name: Validar zero issues no SonarCloud
+        if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && github.event_name != 'push'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          python3 .github/scripts/validate-sonar-issues.py
+          --project-key eimmig_sv-telegram-integration-backend
+          ${{ github.event_name == 'pull_request' && format('--pull-request {0}', github.event.pull_request.number) || format('--branch {0}', github.ref_name) }}
+
+  build-and-push-image:
+    needs: pipeline
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Login no GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/eimmig/sv-telegram-integration-backend:${{ github.sha }}
+            ghcr.io/eimmig/sv-telegram-integration-backend:latest

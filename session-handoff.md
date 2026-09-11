@@ -1,41 +1,56 @@
 # Session Handoff — telegram-integration
 
-## Current Objective
+> Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
+> a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-- Goal: bootstrap the telegram-integration harness.
-- Current status: harness created, no code yet.
-- Branch / commit: (not committed yet)
+**Última atualização:** 2026-09-10
 
-## Completed This Session
+## Objetivo atual
 
-- [x] Created `CLAUDE.md`, `feature_list.json`, `init.sh`, `progress.md`, `session-handoff.md`.
+- **Todas as 8 features deste harness estão `done`** (`feat-001..008`). `epic-005` da raiz já
+  era `done`; `feat-007`/`feat-008` são addendums pós-fechamento (Dockerfile + auth, achados de
+  `infra/feat-004`/migração Kubernetes). Nenhum trabalho pendente neste harness.
+
+## Concluído nesta sessão (2026-09-10)
+
+- [x] `feat-007` (Dockerfile) — ver `progress.md` para o detalhe (investigação do gate de
+      SonarCloud, marcado Won't Fix).
+- [x] `feat-008` (autenticação `X-Service-Key` + limite de corpo) — gatilho documentado desde
+      `feat-002`/`feat-003` ("revisitar quando containerizado") atingido por `feat-007`/
+      `infra/feat-004`. Ver `progress.md` para o detalhe completo, incluindo um achado real
+      (bug de i18n em produção, `locales/` nunca instalado com o pacote) descoberto testando a
+      imagem reconstruída.
 
 ## Verification Evidence
 
 | Check | Command | Result | Notes |
 |---|---|---|---|
-| Build/test | `./init.sh` | not run yet | No Python project files yet (feat-001). |
-
-## Files Changed
-
-- All files in this directory — created.
-
-## Decisions Made
-
-- None specific to this session — dependency manager (uv), lint/format (ruff) and typing (mypy)
-  were already decided project-wide in `../../docs/CONVENTIONS.md`, not reopened per session.
+| Build/test | `uv run pytest --cov` | 93 passed, 100% | |
+| Lint/types | `ruff check` / `mypy` | limpos | |
+| Local harness | `./init.sh` | pass | |
+| CI (subtask+full gate) | GitHub Actions + SonarCloud | pass | PRs #30/#31 verdes de primeira |
+| Container real | `docker run` + `curl` | 401/401/200 conforme esperado | também testado de dentro do cluster kind |
 
 ## Blockers / Risks
 
-- Real Python 3.12+ is not installed on the current dev machine (only the Windows Store
-  stub). Install it before starting feat-001.
+- **Ação manual pendente, fora do escopo de código**: a credencial `httpHeaderAuth` (`id: "2"`,
+  `X-Service-Key (StakeVault)`) referenciada em `n8n/telegram-bot.json` precisa ser criada à mão
+  na instância real do n8n (tipo "Header Auth", header `X-Service-Key`, valor = `SERVICE_KEY`
+  do `.env` deste serviço) antes do workflow importado funcionar de ponta a ponta — mesmo
+  precedente da credencial `telegramApi` (`id: "1"`), nunca configurada nesta sessão por não
+  haver bot real.
+- Credencial `telegramApi` (token do BotFather) continua nunca configurada nem testada contra a
+  API real do Telegram — residual antigo, sem mudança nesta sessão.
 
 ## Next Session Startup
 
-1. Read `../../CLAUDE.md` and `../../docs/services/telegram-integration.md`.
-2. Read this directory's `CLAUDE.md`, `feature_list.json`, `progress.md`.
-3. Run `./init.sh`.
+1. Ler `../../CLAUDE.md` e o `CLAUDE.md` deste serviço.
+2. `feature_list.json` deste harness: todas as features `done` (`feat-001..008`). Nenhum
+   trabalho pendente aqui até surgir novo achado.
+3. Rodar `./init.sh` (deve passar).
 
 ## Recommended Next Step
 
-- Install real Python 3.12+, then start `feat-001`.
+- Nenhum. Se algum dia houver um bot Telegram real disponível: criar a credencial
+  `httpHeaderAuth` pendente + testar o fluxo completo ponta a ponta (residual documentado acima
+  e em `n8n/README.md`).

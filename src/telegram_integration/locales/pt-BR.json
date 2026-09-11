@@ -1,0 +1,23 @@
+{
+  "generic_error": "Ocorreu um erro. Tente novamente mais tarde.",
+  "ask_odd": "Qual foi a odd dessa aposta?",
+  "ask_stake": "Quanto você apostou (valor em R$)?",
+  "bet_captured": "Captura concluída até aqui. O restante do cadastro continua em breve.",
+  "link_success": "Conta vinculada com sucesso! Agora você já pode registrar apostas por aqui.",
+  "link_code_invalid": "Código não encontrado. Confira o código gerado no site e envie novamente.",
+  "link_code_expired": "Esse código expirou. Gere um novo código no site e envie novamente.",
+  "link_already_linked": "Essa conta já está vinculada.",
+  "ask_sport": "Qual o esporte dessa aposta? Responda com o número da opção:",
+  "ask_league": "Qual a liga/competição dessa aposta? Responda com o número da opção:",
+  "ask_market": "Qual o mercado dessa aposta? Responda com o número da opção:",
+  "ask_betting_house_choice": "Não consegui identificar a casa de apostas. Qual das opções abaixo é a certa? Responda com o número:",
+  "catalog_empty_sport": "Você ainda não cadastrou nenhum esporte. Cadastre pelo menos um no site antes de registrar apostas por aqui.",
+  "catalog_empty_league": "Você ainda não cadastrou nenhuma liga/competição. Cadastre pelo menos uma no site antes de registrar apostas por aqui.",
+  "catalog_empty_market": "Você ainda não cadastrou nenhum mercado. Cadastre pelo menos um no site antes de registrar apostas por aqui.",
+  "catalog_empty_betting_house": "Você ainda não cadastrou nenhuma casa de apostas. Cadastre pelo menos uma no site antes de registrar apostas por aqui.",
+  "invalid_catalog_choice": "Não entendi sua escolha.",
+  "bet_submitted": "Aposta registrada com sucesso!",
+  "bet_submit_no_link": "Sua conta do Telegram ainda não está vinculada. Envie /vincular <código> (gerado no site) antes de registrar apostas por aqui.",
+  "bet_submit_catalog_not_found": "Uma das opções escolhidas não existe mais. Envie os dados da aposta novamente.",
+  "bet_submit_validation_failed": "Os valores informados não são válidos para essa aposta (confira a odd e o valor apostado). Envie os dados da aposta novamente."
+}
