@@ -368,7 +368,7 @@
         {
           "id": "feat-010.1",
           "name": "Job deploy no ci.yml",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-436"
         },
         {
