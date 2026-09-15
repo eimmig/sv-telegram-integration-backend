@@ -361,10 +361,23 @@
       "dependencies": [
         "feat-009"
       ],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
+      "status": "in-progress",
+      "plan_review": "Plan Reviewer (2026-09-15): READY. Quinta aplicacao do mesmo padrao mecanico ja validado em epic-028 nesta sessao (bets-service feat-018, stats-service feat-019, api-gateway feat-014, auth-service feat-016) - o job deploy em si (kubectl rollout restart) e agnostico de stack, so muda o Deployment alvo, entao o mesmo padrao vale mesmo este sendo o unico repositorio Python. Confirmado contra este repositorio antes de codificar: infra/k8s/telegram-integration.yaml define o Deployment 'telegram-integration' sem namespace (default); RBAC de infra/k8s/ci-deployer-rbac.yaml ja inclui 'telegram-integration' em resourceNames; secret KUBE_CONFIG confirmado presente neste repositorio GitHub (gh secret list); default_workflow_permissions='write' (gh api), confirmando permissions: {} explicito necessario. As 2 correcoes MINOR ja aplicadas nas 4 instancias anteriores (sem azure/setup-kubectl, permissions: {} explicito) entram direto no plano aqui. Sem BLOCKER.",
+      "jira": "SV-435",
+      "subtasks": [
+        {
+          "id": "feat-010.1",
+          "name": "Job deploy no ci.yml",
+          "status": "in-progress",
+          "jira": "SV-436"
+        },
+        {
+          "id": "feat-010.2",
+          "name": "CHANGELOG e verificacao final",
+          "status": "not-started",
+          "jira": "SV-437"
+        }
+      ],
       "evidence": ""
     }
   ]
