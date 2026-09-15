@@ -2,9 +2,34 @@
 
 ## Estado Atual (Current State)
 
-**Última atualização:** 2026-09-08
-**Feature ativa:** nenhuma (`feat-001`..`feat-006` `done` — backlog atual deste serviço
-completo, `epic-005` fechado na raiz)
+**Última atualização:** 2026-09-15
+**Feature ativa:** nenhuma (`feat-001`..`feat-010` `done` — backlog atual deste serviço completo)
+
+## `feat-010` fechada — CD automático, job `deploy` no `ci.yml` (2026-09-15)
+
+Quinta e última aplicação idêntica do padrão de `epic-028` nesta sessão (depois de `bets-service
+feat-018`, `stats-service feat-019`, `api-gateway feat-014`, `auth-service feat-016`) — mesmo
+`Plan Reviewer`, mesmas 2 correções MINOR já aplicadas (sem `azure/setup-kubectl`, `permissions:
+{}` explícito). Primeiro repositório Python tocado por este padrão, mas o job `deploy` em si é
+agnóstico de stack (`kubectl` puro) — único ajuste real foi o nome do `Deployment`
+(`telegram-integration`), confirmado contra `infra/k8s/telegram-integration.yaml` (sem namespace)
+e `infra/k8s/ci-deployer-rbac.yaml` (`resourceNames` já incluía `telegram-integration`).
+`KUBE_CONFIG` confirmado presente no repositório.
+
+Story SV-435 (subtasks SV-436/SV-437), PRs #35/#36/#37, CI+SonarCloud verdes. `Delivery Reviewer`:
+PASS (revisão condensada, quinta aplicação idêntica, sem achado). Fechamento em 2 disparos de
+`--sync-status` (subtask done sozinha → `Review`; feature done em edição separada → `Done`) —
+mesmo padrão correto já usado em `api-gateway feat-014`/`auth-service feat-016`.
+
+**Achado de infraestrutura, não deste código**: o PR de fechamento (#36) falhou uma vez em "Testes
+unitários e cobertura" com `docker.errors.APIError: 500 ... connection reset by peer` ao puxar a
+imagem `redis` (testcontainers) do Docker Hub — falha transitória de rede do runner do GitHub
+Actions, não causada por esta mudança (diff isolado ao workflow, não toca pytest/testcontainers).
+`gh run rerun --failed` resolveu de primeira, confirmando a hipótese de flake.
+
+Disparo real do job adiado (mesma decisão das 4 features anteriores). Fecha `epic-028` da raiz do
+lado deste repositório — **era o último dos 6 repositórios de aplicação pendente**, `epic-028`
+inteiro deve fechar agora (ver `../../feature_list.json`).
 
 ## Status
 

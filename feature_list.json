@@ -302,7 +302,7 @@
       "dependencies": [
         "feat-007"
       ],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-10, Plan Reviewer (review-suite:ln-11-plan-reviewer) - READY WITH CONCERNS. Achados: MAJOR - packages: write no permissions do job so e concedido se o repositorio tiver 'Workflow permissions' = Read and write em Settings > Actions > General (default de repositorio novo costuma vir restrito a leitura, e nesse caso o job-level permissions e limitado silenciosamente, push falha com 403 em vez de erro de sintaxe) - verificar/configurar antes do primeiro push em main. MINOR (confirmado contra a documentacao oficial do docker/build-push-action) - nao obrigatorio mas recomendado adicionar docker/setup-buildx-action antes do build, incluido no plano corrigido. Escopo confirmado: PAT/imagePullSecrets do cluster de deploy fica fora desta feature.",
       "jira": "SV-331",
       "subtasks": [
@@ -352,7 +352,33 @@
           "jira": "SV-337"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-10. Job build-and-push-image no ci.yml publicando de verdade em ghcr.io/eimmig/sv-telegram-integration-backend - confirmado via log real (containerimage.digest: sha256:34e651b...). Primeiro develop->main de verdade deste repositorio (main so tinha o commit de bootstrap), o que expos 3 achados reais pre-existentes/de guard nao previstos no Plan Review (feat-009.3): issue pre-existente python:S9073 (assercao composta) num teste de feat-003; guard de sonar.qualitygate.wait que nunca funcionou de verdade (expressao GitHub Actions 'cond && \"\" || flag' trata string vazia como falsy); e o mesmo guard, corrigido, ainda so cobria push pra develop, ampliado pra qualquer push direto (primeira analise de uma branch longa sem leak period faz a API devolver status NONE, tratado como reprovado). Delivery Reviewer: CONCERNS -> PASS depois de confirmado o push real. Workflow permissions do repositorio confirmado 'Read and write'. ./init.sh do servico e da raiz verdes. docs/CI-CD.md atualizado com os achados."
+    },
+    {
+      "id": "feat-010",
+      "name": "CD: job de deploy automatico (kubectl rollout restart) no ci.yml",
+      "description": "Fecha epic-028 da raiz (decisao do usuario, 2026-09-15) neste repositorio: job novo 'deploy' no ci.yml, needs: build-and-push-image (feat-009), if restrito a push em main, rodando kubectl rollout restart deployment/telegram-integration -n <namespace> contra o kubeconfig do secret KUBE_CONFIG (gerado por infra/feat-007 - ServiceAccount de CI com RBAC restrito, fora deste repositorio). Nao reaplica manifest - a imagem e referenciada por tag :latest no Deployment, o restart e o suficiente pra repuxar a imagem nova publicada pelo job anterior.",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "done",
+      "plan_review": "Plan Reviewer (2026-09-15): READY. Quinta aplicacao do mesmo padrao mecanico ja validado em epic-028 nesta sessao (bets-service feat-018, stats-service feat-019, api-gateway feat-014, auth-service feat-016) - o job deploy em si (kubectl rollout restart) e agnostico de stack, so muda o Deployment alvo, entao o mesmo padrao vale mesmo este sendo o unico repositorio Python. Confirmado contra este repositorio antes de codificar: infra/k8s/telegram-integration.yaml define o Deployment 'telegram-integration' sem namespace (default); RBAC de infra/k8s/ci-deployer-rbac.yaml ja inclui 'telegram-integration' em resourceNames; secret KUBE_CONFIG confirmado presente neste repositorio GitHub (gh secret list); default_workflow_permissions='write' (gh api), confirmando permissions: {} explicito necessario. As 2 correcoes MINOR ja aplicadas nas 4 instancias anteriores (sem azure/setup-kubectl, permissions: {} explicito) entram direto no plano aqui. Sem BLOCKER.",
+      "jira": "SV-435",
+      "subtasks": [
+        {
+          "id": "feat-010.1",
+          "name": "Job deploy no ci.yml",
+          "status": "done",
+          "jira": "SV-436"
+        },
+        {
+          "id": "feat-010.2",
+          "name": "CHANGELOG e verificacao final",
+          "status": "done",
+          "jira": "SV-437"
+        }
+      ],
+      "evidence": "Fechada em 2026-09-15 (story SV-435, subtasks SV-436/SV-437, PR #35 subtask->story verde). Quinta aplicacao identica do padrao ja revisado e fechado nos 4 repositorios anteriores de epic-028 nesta sessao (bets-service feat-018/stats-service feat-019/api-gateway feat-014/auth-service feat-016) - primeiro repositorio Python, mas o job deploy em si e agnostico de stack (kubectl puro), so mudou o Deployment alvo (telegram-integration), confirmado contra infra/k8s/telegram-integration.yaml (sem namespace) e infra/k8s/ci-deployer-rbac.yaml (resourceNames ja incluia telegram-integration). KUBE_CONFIG confirmado presente no repositorio. Delivery Reviewer: PASS (revisao condensada, sem achado). ./init.sh verde (93 testes, 100% cobertura). Guard comportou como esperado: deploy/build-and-push-image corretamente 'skipping' no evento de PR (run 35013992606). Disparo real do job adiado (mesma decisao das 4 features anteriores - promocao develop->main e decisao de release mais ampla). Fecha a parte de telegram-integration do epic-028 da raiz (1 dos 6 repositorios de aplicacao ainda pendente: web feat-030)."
     }
   ]
 }

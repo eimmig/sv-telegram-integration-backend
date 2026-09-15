@@ -157,3 +157,20 @@ jobs:
           tags: |
             ghcr.io/eimmig/sv-telegram-integration-backend:${{ github.sha }}
             ghcr.io/eimmig/sv-telegram-integration-backend:latest
+
+  deploy:
+    needs: build-and-push-image
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      # kubectl ja vem preinstalado no runner ubuntu-latest - sem action de terceiro
+      - name: Configurar kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
+
+      - name: Reiniciar deployment
+        run: kubectl rollout restart deployment/telegram-integration

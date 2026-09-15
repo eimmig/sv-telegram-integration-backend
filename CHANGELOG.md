@@ -46,3 +46,6 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-332](https://stakevault.atlassian.net/browse/SV-332) - Job build-and-push-image no ci.yml
 - [SV-333](https://stakevault.atlassian.net/browse/SV-333) - CHANGELOG e verificacao final
 - [SV-337](https://stakevault.atlassian.net/browse/SV-337) - Achados reais no primeiro develop->main de verdade deste repositorio
+- [SV-435](https://stakevault.atlassian.net/browse/SV-435) - CD: job de deploy automatico (kubectl rollout restart) no ci.yml
+- [SV-436](https://stakevault.atlassian.net/browse/SV-436) - Job deploy no ci.yml
+- [SV-437](https://stakevault.atlassian.net/browse/SV-437) - CHANGELOG e verificacao final

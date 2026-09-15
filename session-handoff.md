@@ -3,54 +3,37 @@
 > Estado atual, não histórico. O diário cronológico é o `progress.md` — este arquivo é reescrito
 > a cada sessão para responder "o que a próxima sessão precisa saber agora".
 
-**Última atualização:** 2026-09-10
+**Última atualização:** 2026-09-15
 
 ## Objetivo atual
 
-- **Todas as 8 features deste harness estão `done`** (`feat-001..008`). `epic-005` da raiz já
-  era `done`; `feat-007`/`feat-008` são addendums pós-fechamento (Dockerfile + auth, achados de
-  `infra/feat-004`/migração Kubernetes). Nenhum trabalho pendente neste harness.
+`feat-001`..`feat-010` `done`. Backlog deste serviço esgotado.
 
-## Concluído nesta sessão (2026-09-10)
+## Concluído nesta sessão (2026-09-15)
 
-- [x] `feat-007` (Dockerfile) — ver `progress.md` para o detalhe (investigação do gate de
-      SonarCloud, marcado Won't Fix).
-- [x] `feat-008` (autenticação `X-Service-Key` + limite de corpo) — gatilho documentado desde
-      `feat-002`/`feat-003` ("revisitar quando containerizado") atingido por `feat-007`/
-      `infra/feat-004`. Ver `progress.md` para o detalhe completo, incluindo um achado real
-      (bug de i18n em produção, `locales/` nunca instalado com o pacote) descoberto testando a
-      imagem reconstruída.
+- [x] **`feat-010` fechada** (CD automático — job `deploy` em `ci.yml`, `kubectl rollout restart
+      deployment/telegram-integration` contra `KUBE_CONFIG`/`ci-deployer` de `infra/feat-007`).
+      Quinta e última aplicação idêntica do padrão de `epic-028` já revisado nesta sessão
+      (`bets-service feat-018`/`stats-service feat-019`/`api-gateway feat-014`/`auth-service
+      feat-016`) — primeiro repositório Python tocado, mas o job em si é agnóstico de stack.
+      Story SV-435, subtasks SV-436/SV-437, PRs #35/#36/#37, CI+SonarCloud verdes. `Delivery
+      Reviewer`: PASS. Fechamento em 2 disparos de `--sync-status` (padrão correto, mesmo já
+      usado em `api-gateway feat-014`/`auth-service feat-016`).
+- [x] **Achado de infraestrutura, não deste código**: PR #36 falhou uma vez em "Testes unitários e
+      cobertura" com `docker.errors.APIError: 500 ... connection reset by peer` puxando a imagem
+      `redis` do Docker Hub (testcontainers) — falha transitória de rede do runner do GitHub
+      Actions, não causada por esta mudança (o diff só adiciona um job de workflow, não toca
+      pytest/testcontainers). `gh run rerun --failed` resolveu de primeira.
+- [x] Disparo real do job `deploy` adiado (mesma decisão das 4 features anteriores de `epic-028`
+      nesta sessão) — promoção `develop -> main` é decisão de release mais ampla.
 
-## Verification Evidence
+## Bloqueios / Riscos
 
-| Check | Command | Result | Notes |
-|---|---|---|---|
-| Build/test | `uv run pytest --cov` | 93 passed, 100% | |
-| Lint/types | `ruff check` / `mypy` | limpos | |
-| Local harness | `./init.sh` | pass | |
-| CI (subtask+full gate) | GitHub Actions + SonarCloud | pass | PRs #30/#31 verdes de primeira |
-| Container real | `docker run` + `curl` | 401/401/200 conforme esperado | também testado de dentro do cluster kind |
+Nenhum bloqueio. Fecha `epic-028` da raiz do lado deste repositório — era o último dos 6
+repositórios de aplicação pendente (`epic-028` inteiro deve estar `done` agora, conferir
+`../../feature_list.json`).
 
-## Blockers / Risks
+## Próxima sessão — por onde começar
 
-- **Ação manual pendente, fora do escopo de código**: a credencial `httpHeaderAuth` (`id: "2"`,
-  `X-Service-Key (StakeVault)`) referenciada em `n8n/telegram-bot.json` precisa ser criada à mão
-  na instância real do n8n (tipo "Header Auth", header `X-Service-Key`, valor = `SERVICE_KEY`
-  do `.env` deste serviço) antes do workflow importado funcionar de ponta a ponta — mesmo
-  precedente da credencial `telegramApi` (`id: "1"`), nunca configurada nesta sessão por não
-  haver bot real.
-- Credencial `telegramApi` (token do BotFather) continua nunca configurada nem testada contra a
-  API real do Telegram — residual antigo, sem mudança nesta sessão.
-
-## Next Session Startup
-
-1. Ler `../../CLAUDE.md` e o `CLAUDE.md` deste serviço.
-2. `feature_list.json` deste harness: todas as features `done` (`feat-001..008`). Nenhum
-   trabalho pendente aqui até surgir novo achado.
-3. Rodar `./init.sh` (deve passar).
-
-## Recommended Next Step
-
-- Nenhum. Se algum dia houver um bot Telegram real disponível: criar a credencial
-  `httpHeaderAuth` pendente + testar o fluxo completo ponta a ponta (residual documentado acima
-  e em `n8n/README.md`).
+1. Rodar `./init.sh` (deve passar).
+2. Backlog deste serviço vazio. Ver `feature_list.json` da raiz para o próximo epic elegível.
