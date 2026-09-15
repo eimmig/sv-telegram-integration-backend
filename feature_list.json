@@ -374,11 +374,11 @@
         {
           "id": "feat-010.2",
           "name": "CHANGELOG e verificacao final",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-437"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-15 (story SV-435, subtasks SV-436/SV-437, PR #35 subtask->story verde). Quinta aplicacao identica do padrao ja revisado e fechado nos 4 repositorios anteriores de epic-028 nesta sessao (bets-service feat-018/stats-service feat-019/api-gateway feat-014/auth-service feat-016) - primeiro repositorio Python, mas o job deploy em si e agnostico de stack (kubectl puro), so mudou o Deployment alvo (telegram-integration), confirmado contra infra/k8s/telegram-integration.yaml (sem namespace) e infra/k8s/ci-deployer-rbac.yaml (resourceNames ja incluia telegram-integration). KUBE_CONFIG confirmado presente no repositorio. Delivery Reviewer: PASS (revisao condensada, sem achado). ./init.sh verde (93 testes, 100% cobertura). Guard comportou como esperado: deploy/build-and-push-image corretamente 'skipping' no evento de PR (run 35013992606). Disparo real do job adiado (mesma decisao das 4 features anteriores - promocao develop->main e decisao de release mais ampla). Fecha a parte de telegram-integration do epic-028 da raiz (1 dos 6 repositorios de aplicacao ainda pendente: web feat-030)."
     }
   ]
 }
