@@ -353,6 +353,19 @@
         }
       ],
       "evidence": "Fechada em 2026-09-10. Job build-and-push-image no ci.yml publicando de verdade em ghcr.io/eimmig/sv-telegram-integration-backend - confirmado via log real (containerimage.digest: sha256:34e651b...). Primeiro develop->main de verdade deste repositorio (main so tinha o commit de bootstrap), o que expos 3 achados reais pre-existentes/de guard nao previstos no Plan Review (feat-009.3): issue pre-existente python:S9073 (assercao composta) num teste de feat-003; guard de sonar.qualitygate.wait que nunca funcionou de verdade (expressao GitHub Actions 'cond && \"\" || flag' trata string vazia como falsy); e o mesmo guard, corrigido, ainda so cobria push pra develop, ampliado pra qualquer push direto (primeira analise de uma branch longa sem leak period faz a API devolver status NONE, tratado como reprovado). Delivery Reviewer: CONCERNS -> PASS depois de confirmado o push real. Workflow permissions do repositorio confirmado 'Read and write'. ./init.sh do servico e da raiz verdes. docs/CI-CD.md atualizado com os achados."
+    },
+    {
+      "id": "feat-010",
+      "name": "CD: job de deploy automatico (kubectl rollout restart) no ci.yml",
+      "description": "Fecha epic-028 da raiz (decisao do usuario, 2026-09-15) neste repositorio: job novo 'deploy' no ci.yml, needs: build-and-push-image (feat-009), if restrito a push em main, rodando kubectl rollout restart deployment/telegram-integration -n <namespace> contra o kubeconfig do secret KUBE_CONFIG (gerado por infra/feat-007 - ServiceAccount de CI com RBAC restrito, fora deste repositorio). Nao reaplica manifest - a imagem e referenciada por tag :latest no Deployment, o restart e o suficiente pra repuxar a imagem nova publicada pelo job anterior.",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
     }
   ]
 }
