@@ -8,7 +8,7 @@ set -euo pipefail
 
 changelog_path="${1:?uso: validate-changelog.sh <caminho-do-CHANGELOG.md>}"
 
-if [ -z "${BASE_SHA:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+if [[ -z "${BASE_SHA:-}" ]] || [[ -z "${HEAD_SHA:-}" ]]; then
   echo "MISS BASE_SHA/HEAD_SHA nao definidos no ambiente - este passo so roda em pull_request."
   exit 1
 fi

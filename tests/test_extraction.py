@@ -20,10 +20,6 @@ def test_extracts_odd_via_at_symbol_notation() -> None:
 
 
 def test_extracts_odd_ignoring_currency_prefixed_amounts() -> None:
-    # Real bug found against a real bet-slip screenshot: "Valor Total R$2.50"
-    # (the stake) also matches the bare 2-decimal pattern used to find the
-    # odd, and appeared before the real odd ("5.50") in reading order - it
-    # must never be mistaken for the odd just because it has 2 decimals too.
     result = extract_fields("Valor Total R$2.50\nMais de 9.5 Escanteios 5.50")
 
     assert result.odd == "5.50"
