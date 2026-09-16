@@ -19,8 +19,8 @@ Everything this module can't fill goes through the conversational fallback
 (see `conversation.py`).
 
 `bets-service` expects catalog IDs (bettingHouseId/sportId/leagueId/marketId),
-not names - resolving an extracted name against the tenant's catalog is
-`feat-004`'s responsibility, not this module's.
+not names - resolving an extracted name against the tenant's catalog is not
+this module's responsibility.
 """
 
 from __future__ import annotations

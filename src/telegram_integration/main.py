@@ -27,12 +27,7 @@ def _expected_service_key() -> str:
 
 def require_service_key(x_service_key: Annotated[str | None, Header()] = None) -> None:
     """n8n -> this service, same X-Service-Key credential already used for this
-    service's own outbound calls to api-gateway (bets_client.py/catalog_client.py) -
-    not a new secret. Was accepted as unauthenticated while the service only ran on
-    the host, unexposed (see services/telegram-integration/n8n/README.md); now that
-    it's containerized (infra/feat-004), the documented trigger for revisiting it
-    is met.
-    """
+    service's own outbound calls to api-gateway (bets_client.py/catalog_client.py)."""
     expected = _expected_service_key()
     if not expected or x_service_key != expected:
         raise HTTPException(

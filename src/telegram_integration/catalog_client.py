@@ -3,9 +3,7 @@
 `auth_client.py`, this call goes THROUGH the api-gateway (X-Service-Key +
 X-Telegram-User-Id, same pair used for `POST /api/v1/bets`) - no structural
 circularity here, the Gateway resolves the tenant the same way it would for the
-final bet submission. Routing for these 3 paths was a real gap fixed in
-api-gateway feat-007 (see docs/DECISIONS-LOG.md 2026-09-08) before this client
-could work at all.
+final bet submission.
 """
 
 from __future__ import annotations
