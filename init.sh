@@ -16,32 +16,32 @@ for candidate in python3 python; do
   fi
 done
 
-if [ -z "$PYTHON" ]; then
+if [[ -z "$PYTHON" ]]; then
   echo "MISS no real Python 3.12+ found on PATH (tried python3, python)"
   exit 1
 fi
 echo "OK   $version — resolved as '$PYTHON'"
 
-if [ -f "requirements.txt" ] && [ ! -f "pyproject.toml" ]; then
+if [[ -f "requirements.txt" ]] && [[ ! -f "pyproject.toml" ]]; then
   echo "FAIL requirements.txt found without pyproject.toml, but docs/CONVENTIONS.md decided"
   echo "     uv (pyproject.toml) as the dependency manager for this service. Migrate, or get"
   echo "     docs/CONVENTIONS.md updated first if this needs to change."
   exit 1
 fi
 
-if [ -f "pyproject.toml" ]; then
+if [[ -f "pyproject.toml" ]]; then
   echo "OK   Python project detected (pyproject.toml)"
   if ! command -v uv >/dev/null 2>&1; then
     echo "MISS uv not found on PATH (see docs/CONVENTIONS.md)"
     exit 1
   fi
-  uv sync
+  uv sync --no-build
   echo "..   ruff check"
-  uv run ruff check .
+  uv run --no-build ruff check .
   echo "..   mypy"
-  uv run mypy .
+  uv run --no-build mypy .
   echo "..   pytest (with coverage)"
-  uv run pytest --cov --cov-fail-under=80
+  uv run --no-build pytest --cov --cov-fail-under=80
 else
   echo "----  No pyproject.toml yet — feat-001 not started."
   echo "     See feature_list.json for the next step."

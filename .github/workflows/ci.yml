@@ -49,7 +49,7 @@ jobs:
         # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
         # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3.2.4
 
       - uses: actions/setup-python@v5
         # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
@@ -66,8 +66,8 @@ jobs:
         # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
         run: |
-          uv sync
-          uv run ruff check .
+          uv sync --no-build --locked
+          uv run --no-build --locked ruff check .
 
       # 4. Testes unitarios + cobertura
       - name: Instalar Tesseract OCR (feat-002 - extracao de bilhete via foto)
@@ -81,7 +81,7 @@ jobs:
         # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
         # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
-        run: uv run pytest --cov=. --cov-report=xml
+        run: uv run --no-build --locked pytest --cov=. --cov-report=xml
 
       # 5. Qualidade de codigo e cobertura (SonarCloud)
       - name: SonarCloud
@@ -91,7 +91,7 @@ jobs:
         # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
         # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main')
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@689fb39b34b9aa95ebc5f8f119343ddd51542402 # v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
