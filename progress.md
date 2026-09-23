@@ -453,3 +453,35 @@ ruff/mypy limpos. Verificação real contra o container reconstruído (não só 
 header, 401 com header errado, 200 com header correto — confirmado também de dentro do cluster
 Kubernetes (`kubectl run` de um pod efêmero). 1 subtask (SV-291, story SV-290), 2 PRs (#30
 subtask->feature, #31 feature->develop), CI+SonarCloud verdes nos dois de primeira.
+
+## `feat-011` fechada — reformulação de marca StakeVault -> Arka (2026-09-23)
+
+Continuação do `epic-032` da raiz (rebranding StakeVault -> Arka) neste harness — 3º harness na
+ordem sugerida, depois do vault raiz e de `apps/web feat-042`. `grep -ril "stakevault"`
+(case-insensitive, excluindo `.venv`/`__pycache__`) achou só 4 arquivos no repositório inteiro:
+`CHANGELOG.md` e `feature_list.json` citam a string só em contexto histórico/técnico que **não**
+muda (links reais `https://stakevault.atlassian.net/browse/SV-XXX` gerados por
+`tools/jira_story.py`, e a `evidence` de `feat-008` já fechada registrando o nome de uma
+credencial n8n como estava na época — não reescrita, mesmo princípio já usado no vault raiz);
+`n8n/README.md` + `n8n/telegram-bot.json` são o único ponto real de marca visível neste
+repositório (nome/avatar do bot Telegram exibido na instância n8n).
+
+Escopo real: 7 ocorrências em `n8n/telegram-bot.json` (workflow `name`, `webhookId`, 2 nomes de
+credencial referenciadas × 3 refs cada) + 2 em `n8n/README.md` (título + menção de credencial,
+pra bater com o JSON). Confirmado seguro antes de codificar: este workflow nunca foi conectado a
+um bot Telegram real (nenhum token configurado, ver seção "Residual que sobrevive" acima) —
+renomear `webhookId`/nomes não quebra nada em produção. Grep adicional (`grep -rniE
+"stake|vault"`) descartou o risco de nome de marca partido em substrings (achado real análogo em
+`apps/web feat-042`, wordmark "Stake"/"Vault" em 2 `<span>` que o grep original não pegava) — todos
+os hits remanescentes são o domínio "stake" de apostas (`odd`/`stake`), sem relação com a marca.
+
+Plan Reviewer (passe próprio, escopo trivial/mecânico): READY, sem achado. Delivery Reviewer
+(passe próprio sobre o diff completo `develop...feature/SV-545`): PASS, sem achado — JSON do
+workflow válido, nomes de credencial batendo entre `README.md` e o JSON, zero efeito colateral em
+código/testes Python (grep já tinha confirmado zero menção de marca em `src/`/`tests/` antes de
+começar). 3 subtasks (SV-546..548, story SV-545), PRs #42/#43/#44 (subtask->story) + #45
+(story->develop, CI+SonarCloud verdes). `./init.sh` do serviço (93 testes, 100% cobertura) e da
+raiz (7 sub-harnesses OK) verdes. Nenhuma descoberta nova que exigisse nota de vault — mudança
+puramente textual. Fecha a parte de `telegram-integration` do `epic-032` da raiz — próximo
+harness na ordem sugerida: serviços Java (`auth-service`/`bets-service`/`stats-service`/
+`api-gateway`) + `infra/`.
