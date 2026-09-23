@@ -404,7 +404,7 @@
         {
           "id": "feat-011.3",
           "name": "CHANGELOG, verificacao final e revisao do vault",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-548",
           "detail": "Fecha a parte de telegram-integration do epic-032 da raiz - registra evidencia e sinaliza o proximo harness na ordem sugerida (servicos Java + infra/).",
           "checklist": [
@@ -417,7 +417,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "3 subtasks (SV-546..548, story SV-545) done, PRs #42 (SV-546) e #43 (SV-547) subtask->story com CI verde (build-and-push-image/deploy corretamente 'skipping' em evento de PR). Rename StakeVault->Arka nas 7 ocorrencias de n8n/telegram-bot.json (workflow name, webhookId, 2 nomes de credencial x3 refs cada) e 2 ocorrencias de n8n/README.md (titulo + mencao de credencial) - unico ponto real de marca visivel neste repositorio (nome/avatar do bot exibido na instancia n8n), confirmado por grep -ril 'stakevault' (so 4 arquivos no total) + grep -rniE 'stake|vault' pra descartar wordmark partido em substrings (mesmo cuidado do achado real de apps/web feat-042). CHANGELOG.md (links Jira reais) e evidence historica de feat-008 corretamente fora de escopo - nao reescritos. Plan Reviewer (passe proprio, escopo trivial): READY, sem achado. Delivery Reviewer (passe proprio sobre o diff completo develop...feature/SV-545): PASS, sem achado - JSON do workflow valido, nomes de credencial batendo entre README e JSON, zero efeito colateral em codigo/testes Python (confirmado que nenhum arquivo src/tests menciona a marca). ./init.sh do servico verde (93 testes, 100% cobertura) e da raiz verde (7 sub-harnesses OK). Nenhuma descoberta nova que exigisse nota de vault - mudanca puramente textual/mecanica. Fecha a parte de telegram-integration do epic-032 da raiz - proximo harness na ordem sugerida: servicos Java (auth-service/bets-service/stats-service/api-gateway) + infra/."
     }
   ]
 }
