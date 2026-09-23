@@ -47,3 +47,7 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-435](https://stakevault.atlassian.net/browse/SV-435) - CD: job de deploy automatico (kubectl rollout restart) no ci.yml
 - [SV-436](https://stakevault.atlassian.net/browse/SV-436) - Job deploy no ci.yml
 - [SV-437](https://stakevault.atlassian.net/browse/SV-437) - CHANGELOG e verificacao final
+- [SV-545](https://stakevault.atlassian.net/browse/SV-545) - Reformulacao de marca: StakeVault -> Arka (workflow n8n)
+- [SV-546](https://stakevault.atlassian.net/browse/SV-546) - n8n/telegram-bot.json: StakeVault -> Arka (workflow name, webhookId, 2 nomes de credencial x3 refs)
+- [SV-547](https://stakevault.atlassian.net/browse/SV-547) - n8n/README.md: titulo + mencao de credencial atualizados para bater com o JSON
+- [SV-548](https://stakevault.atlassian.net/browse/SV-548) - CHANGELOG, verificacao final e revisao do vault

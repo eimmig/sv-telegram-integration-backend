@@ -379,6 +379,45 @@
         }
       ],
       "evidence": "Fechada em 2026-09-15 (story SV-435, subtasks SV-436/SV-437, PR #35 subtask->story verde). Quinta aplicacao identica do padrao ja revisado e fechado nos 4 repositorios anteriores de epic-028 nesta sessao (bets-service feat-018/stats-service feat-019/api-gateway feat-014/auth-service feat-016) - primeiro repositorio Python, mas o job deploy em si e agnostico de stack (kubectl puro), so mudou o Deployment alvo (telegram-integration), confirmado contra infra/k8s/telegram-integration.yaml (sem namespace) e infra/k8s/ci-deployer-rbac.yaml (resourceNames ja incluia telegram-integration). KUBE_CONFIG confirmado presente no repositorio. Delivery Reviewer: PASS (revisao condensada, sem achado). ./init.sh verde (93 testes, 100% cobertura). Guard comportou como esperado: deploy/build-and-push-image corretamente 'skipping' no evento de PR (run 35013992606). Disparo real do job adiado (mesma decisao das 4 features anteriores - promocao develop->main e decisao de release mais ampla). Fecha a parte de telegram-integration do epic-028 da raiz (1 dos 6 repositorios de aplicacao ainda pendente: web feat-030)."
+    },
+    {
+      "id": "feat-011",
+      "name": "Reformulacao de marca: StakeVault -> Arka (workflow n8n)",
+      "description": "Continuacao do epic-032 da raiz (rebranding StakeVault -> Arka) neste harness - 2o repositorio de aplicacao na ordem sugerida (depois de apps/web feat-042), 3o harness depois do vault raiz. grep -ril 'stakevault' (case-insensitive, excluindo .venv/__pycache__) achou 4 arquivos: CHANGELOG.md e feature_list.json (ambos so citam a string em contexto historico/tecnico que NAO muda - links reais https://stakevault.atlassian.net/browse/SV-XXX gerados por tools/jira_story.py, e evidence de feat-008 registrando o nome da credencial como estava na epoca), e n8n/README.md + n8n/telegram-bot.json (nome/avatar do bot Telegram exibido na instancia n8n - explicitamente no escopo original do epic-032: 'nome/avatar do bot Telegram (n8n workflow + qualquer credencial/BotFather fora do repo)'). Escopo real: renomear StakeVault->Arka no workflow n8n exportado (nome do workflow, webhookId, nomes das 2 credenciais referenciadas) e na doc que o descreve. Nao muda: identificadores tecnicos reais (nenhum GroupId/env var/secret com 'stakevault' existe neste servico), dominio Jira (decisao ja registrada em docs/DECISIONS-LOG.md 2026-09-23 - fora de escopo de qualquer harness desta rodada), evidence historica de feature ja fechada.",
+      "dependencies": [],
+      "status": "done",
+      "plan_review": "2026-09-23, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado antes de codificar - passe proprio (escopo trivial/mecanico, sem subagentes). Veredito: READY, sem achado. Grounding: grep -ril 'stakevault' (4 arquivos) + grep -rniE 'stake|vault' pra descartar risco de nome de marca partido em substrings (achado analogo em apps/web feat-042 com wordmark Stake/Vault em 2 spans) - todos os hits remanescentes sao o dominio 'stake' de apostas (odd/stake), sem relacao com a marca. Confirmado: workflow n8n nunca foi conectado a um bot Telegram real (nenhum token configurado, n8n/README.md secao 'Residual que sobrevive') - renomear webhookId/nomes e seguro, nao quebra nada em producao. CHANGELOG.md (links Jira reais) e feature_list.json (evidence historica de feat-008) corretamente fora de escopo, mesmo principio ja usado no vault raiz (DECISIONS-LOG.md: mencoes que citavam StakeVault 'na epoca' nao sao reescritas).",
+      "jira": "SV-545",
+      "subtasks": [
+        {
+          "id": "feat-011.1",
+          "name": "n8n/telegram-bot.json: StakeVault -> Arka (workflow name, webhookId, 2 nomes de credencial x3 refs)",
+          "status": "done",
+          "jira": "SV-546"
+        },
+        {
+          "id": "feat-011.2",
+          "name": "n8n/README.md: titulo + mencao de credencial atualizados para bater com o JSON",
+          "status": "done",
+          "jira": "SV-547"
+        },
+        {
+          "id": "feat-011.3",
+          "name": "CHANGELOG, verificacao final e revisao do vault",
+          "status": "done",
+          "jira": "SV-548",
+          "detail": "Fecha a parte de telegram-integration do epic-032 da raiz - registra evidencia e sinaliza o proximo harness na ordem sugerida (servicos Java + infra/).",
+          "checklist": [
+            "Entrada em CHANGELOG.md (Unreleased)",
+            "./init.sh do servico e da raiz verdes",
+            "Delivery Reviewer rodado sobre o diff real desta feature",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC 1) no mesmo commit"
+          ],
+          "validation": "init.sh verde, Delivery Reviewer sem achado real pendente, evidence preenchida.",
+          "owner": "agente"
+        }
+      ],
+      "evidence": "3 subtasks (SV-546..548, story SV-545) done, PRs #42 (SV-546) e #43 (SV-547) subtask->story com CI verde (build-and-push-image/deploy corretamente 'skipping' em evento de PR). Rename StakeVault->Arka nas 7 ocorrencias de n8n/telegram-bot.json (workflow name, webhookId, 2 nomes de credencial x3 refs cada) e 2 ocorrencias de n8n/README.md (titulo + mencao de credencial) - unico ponto real de marca visivel neste repositorio (nome/avatar do bot exibido na instancia n8n), confirmado por grep -ril 'stakevault' (so 4 arquivos no total) + grep -rniE 'stake|vault' pra descartar wordmark partido em substrings (mesmo cuidado do achado real de apps/web feat-042). CHANGELOG.md (links Jira reais) e evidence historica de feat-008 corretamente fora de escopo - nao reescritos. Plan Reviewer (passe proprio, escopo trivial): READY, sem achado. Delivery Reviewer (passe proprio sobre o diff completo develop...feature/SV-545): PASS, sem achado - JSON do workflow valido, nomes de credencial batendo entre README e JSON, zero efeito colateral em codigo/testes Python (confirmado que nenhum arquivo src/tests menciona a marca). ./init.sh do servico verde (93 testes, 100% cobertura) e da raiz verde (7 sub-harnesses OK). Nenhuma descoberta nova que exigisse nota de vault - mudanca puramente textual/mecanica. Fecha a parte de telegram-integration do epic-032 da raiz - proximo harness na ordem sugerida: servicos Java (auth-service/bets-service/stats-service/api-gateway) + infra/."
     }
   ]
 }
