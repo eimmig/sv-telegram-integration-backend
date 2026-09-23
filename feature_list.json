@@ -437,7 +437,7 @@
         {
           "id": "feat-012.2",
           "name": "CHANGELOG e verificacao final",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-578",
           "detail": "Fecha a parte de telegram-integration do epic-033 da raiz.",
           "checklist": [
@@ -451,7 +451,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "2 subtasks (SV-577/578, story SV-576) done, PRs #46/#47 (subtask->story) + #48 (story->develop->main, promocao real) - CI+SonarCloud verdes. Job 'release' identico ao desenhado/revisado em auth-service feat-020, adaptado pra uv (uv version X.Y.Z). Verificacao real end-to-end confirmada: push real em main (2026-09-23T23:09Z) - tag v0.1.0 criada, GitHub Release 'Latest' publicado, commit chore(release) empurrado pra main via RELEASE_TOKEN, sem loop de CI. Job 'deploy' (nao relacionado, pre-existente) falhou como esperado - KUBE_CONFIG nao alcanca o cluster a partir de runners hospedados (residual ja documentado). Fecha a parte de telegram-integration do epic-033 da raiz - unico servico Python."
     }
   ]
 }
