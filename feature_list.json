@@ -398,7 +398,7 @@
         {
           "id": "feat-011.2",
           "name": "n8n/README.md: titulo + mencao de credencial atualizados para bater com o JSON",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-547"
         },
         {
