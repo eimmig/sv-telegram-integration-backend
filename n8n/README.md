@@ -1,4 +1,4 @@
-# Fluxo n8n — StakeVault Bot
+# Fluxo n8n — Arka Bot
 
 `telegram-bot.json` é o workflow exportado (formato nativo do n8n) que recebe o webhook do
 Telegram, ramifica entre vínculo de conta, foto e texto, e chama o serviço Python:
@@ -110,7 +110,7 @@ serviço. Resolvido:
   `catalog_client.py`), não um novo. `401` sem o header ou com valor errado.
 - `telegram-bot.json`: os 2 nós `HTTP Request` (**Confirm link (Python)**, **Capture bet
   (Python)**) ganharam `authentication: genericCredentialType`/`genericAuthType: httpHeaderAuth`,
-  referenciando uma credencial nova (`id: "2"`, `name: "X-Service-Key (StakeVault)"`) — **precisa
+  referenciando uma credencial nova (`id: "2"`, `name: "X-Service-Key (Arka)"`) — **precisa
   ser criada manualmente na instância do n8n** antes do workflow funcionar (mesmo precedente da
   credencial `telegramApi` `id: "1"`, referenciada mas nunca embutida no JSON exportado, nunca
   configurada nesta sessão por não haver bot real). Ao criar: tipo "Header Auth", nome do header

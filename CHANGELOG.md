@@ -7,16 +7,9 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 
 ## [Unreleased]
 
-### Fixed
-
-- 18 apontamentos abertos do SonarCloud corrigidos: `[[` em vez de `[` nos scripts bash
-  (`init.sh`, `.github/scripts/validate-changelog.sh`), GitHub Actions de terceiro
-  (`astral-sh/setup-uv`, `SonarSource/sonarqube-scan-action`) pinadas por hash de commit em vez
-  de tag mutável, e `uv sync`/`uv run` com `--no-build --locked` (bloqueia execução de build
-  script arbitrário na instalação e trava a versão resolvida das dependências).
-- Chave do projeto no SonarCloud corrigida para `eimmig_sv-telegram-integration-backend`. O SonarCloud gera a chave como
-  `<org>_<repo>` ao importar um repositório do GitHub; a forma sem prefixo, usada até aqui, faria a
-  análise falhar com projeto inexistente.
+- 18 apontamentos abertos do SonarCloud corrigidos (scripts bash, GitHub Actions pinadas por
+  hash, `uv sync`/`uv run --no-build --locked`)
+- Corrigir chave do projeto no SonarCloud (`eimmig_sv-telegram-integration-backend`)
 - [SV-181](https://stakevault.atlassian.net/browse/SV-181) - Setup do projeto Python + webhook n8n
 - [SV-182](https://stakevault.atlassian.net/browse/SV-182) - Bootstrap uv (pyproject.toml/uv.lock reais) + app FastAPI com GET /health + testes
 - [SV-183](https://stakevault.atlassian.net/browse/SV-183) - i18n: locales/{pt-BR,en-US,es}.json + loader com fallback + testes
@@ -54,3 +47,10 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-435](https://stakevault.atlassian.net/browse/SV-435) - CD: job de deploy automatico (kubectl rollout restart) no ci.yml
 - [SV-436](https://stakevault.atlassian.net/browse/SV-436) - Job deploy no ci.yml
 - [SV-437](https://stakevault.atlassian.net/browse/SV-437) - CHANGELOG e verificacao final
+- [SV-545](https://stakevault.atlassian.net/browse/SV-545) - Reformulacao de marca: StakeVault -> Arka (workflow n8n)
+- [SV-546](https://stakevault.atlassian.net/browse/SV-546) - n8n/telegram-bot.json: StakeVault -> Arka (workflow name, webhookId, 2 nomes de credencial x3 refs)
+- [SV-547](https://stakevault.atlassian.net/browse/SV-547) - n8n/README.md: titulo + mencao de credencial atualizados para bater com o JSON
+- [SV-548](https://stakevault.atlassian.net/browse/SV-548) - CHANGELOG, verificacao final e revisao do vault
+- [SV-576](https://stakevault.atlassian.net/browse/SV-576) - CI: gerar versao (semver + tag + Release + bump de pyproject.toml + corte de CHANGELOG) ao merge em main
+- [SV-577](https://stakevault.atlassian.net/browse/SV-577) - Job 'release' no ci.yml + .github/scripts/cut-changelog.py
+- [SV-578](https://stakevault.atlassian.net/browse/SV-578) - CHANGELOG e verificacao final
