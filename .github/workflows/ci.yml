@@ -162,3 +162,73 @@ jobs:
 
       - name: Reiniciar deployment
         run: kubectl rollout restart deployment/telegram-integration
+
+  release:
+    needs: pipeline
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3.2.4
+
+      # Calcula a proxima versao a partir de Conventional Commits desde a ultima tag - so
+      # calcula, nao cria a tag (isso e o passo "Criar tag e GitHub Release" mais abaixo).
+      # github.token de leitura basta aqui, nada disto e bloqueado por branch protection.
+      - name: Calcular proxima versao (Conventional Commits)
+        id: semver
+        uses: ietf-tools/semver-action@c90370b2958652d71c06a3484129a4d423a6d8a8 # v1.11.0
+        with:
+          token: ${{ github.token }}
+          branch: main
+          noVersionBumpBehavior: patch
+
+      - name: Atualizar versao no pyproject.toml
+        run: uv version ${{ steps.semver.outputs.nextStrict }}
+
+      - name: Validar TOML do pyproject.toml apos o bump
+        run: python3 -c "import tomllib; tomllib.load(open('pyproject.toml', 'rb'))"
+
+      - name: Cortar CHANGELOG.md
+        run: python3 .github/scripts/cut-changelog.py CHANGELOG.md ${{ steps.semver.outputs.nextStrict }}
+
+      # main tem required status check "pipeline" - o GITHUB_TOKEN padrao roda como
+      # github-actions[bot], que nao e admin e seria rejeitado empurrando um commit novo
+      # (nenhum check rodou pra ele ainda). RELEASE_TOKEN (PAT do dono/admin, ver
+      # docs/pipeline-ci-cd.md) bypassa isso do mesmo jeito que um push manual do dono
+      # bypassaria - usado so aqui, embutido na URL (vida curta de um comando), nunca
+      # persistido no credential helper (persist-credentials: false acima). [skip ci] evita
+      # o loop: PAT (diferente de GITHUB_TOKEN) dispara o workflow de novo por padrao.
+      - name: Commit e push da release
+        id: release-commit
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          NEXT_VERSION: ${{ steps.semver.outputs.next }}
+        run: |
+          git add pyproject.toml uv.lock CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): $NEXT_VERSION [skip ci]"
+            git push "https://x-access-token:${RELEASE_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # commit: aponta explicitamente pro commit que acabou de ser empurrado (o bump) -
+      # sem isso a action usaria o commit que disparou o job, ANTES do bump.
+      - name: Criar tag e GitHub Release
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
+        with:
+          tag: ${{ steps.semver.outputs.next }}
+          name: ${{ steps.semver.outputs.next }}
+          commit: ${{ steps.release-commit.outputs.sha }}
+          token: ${{ github.token }}
+          generateReleaseNotes: true
