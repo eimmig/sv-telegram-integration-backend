@@ -51,3 +51,6 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-546](https://stakevault.atlassian.net/browse/SV-546) - n8n/telegram-bot.json: StakeVault -> Arka (workflow name, webhookId, 2 nomes de credencial x3 refs)
 - [SV-547](https://stakevault.atlassian.net/browse/SV-547) - n8n/README.md: titulo + mencao de credencial atualizados para bater com o JSON
 - [SV-548](https://stakevault.atlassian.net/browse/SV-548) - CHANGELOG, verificacao final e revisao do vault
+- [SV-576](https://stakevault.atlassian.net/browse/SV-576) - CI: gerar versao (semver + tag + Release + bump de pyproject.toml + corte de CHANGELOG) ao merge em main
+- [SV-577](https://stakevault.atlassian.net/browse/SV-577) - Job 'release' no ci.yml + .github/scripts/cut-changelog.py
+- [SV-578](https://stakevault.atlassian.net/browse/SV-578) - CHANGELOG e verificacao final

@@ -418,6 +418,40 @@
         }
       ],
       "evidence": "3 subtasks (SV-546..548, story SV-545) done, PRs #42 (SV-546) e #43 (SV-547) subtask->story com CI verde (build-and-push-image/deploy corretamente 'skipping' em evento de PR). Rename StakeVault->Arka nas 7 ocorrencias de n8n/telegram-bot.json (workflow name, webhookId, 2 nomes de credencial x3 refs cada) e 2 ocorrencias de n8n/README.md (titulo + mencao de credencial) - unico ponto real de marca visivel neste repositorio (nome/avatar do bot exibido na instancia n8n), confirmado por grep -ril 'stakevault' (so 4 arquivos no total) + grep -rniE 'stake|vault' pra descartar wordmark partido em substrings (mesmo cuidado do achado real de apps/web feat-042). CHANGELOG.md (links Jira reais) e evidence historica de feat-008 corretamente fora de escopo - nao reescritos. Plan Reviewer (passe proprio, escopo trivial): READY, sem achado. Delivery Reviewer (passe proprio sobre o diff completo develop...feature/SV-545): PASS, sem achado - JSON do workflow valido, nomes de credencial batendo entre README e JSON, zero efeito colateral em codigo/testes Python (confirmado que nenhum arquivo src/tests menciona a marca). ./init.sh do servico verde (93 testes, 100% cobertura) e da raiz verde (7 sub-harnesses OK). Nenhuma descoberta nova que exigisse nota de vault - mudanca puramente textual/mecanica. Fecha a parte de telegram-integration do epic-032 da raiz - proximo harness na ordem sugerida: servicos Java (auth-service/bets-service/stats-service/api-gateway) + infra/."
+    },
+    {
+      "id": "feat-012",
+      "name": "CI: gerar versao (semver + tag + Release + bump de pyproject.toml + corte de CHANGELOG) ao merge em main",
+      "description": "6o harness do epic-033 da raiz, unico servico Python - mesmo mecanismo ja validado em auth-service feat-020 (ver aquele feature_list.json pro plan review completo, 2 subagentes independentes, pesquisa real), adaptado pra uv: o passo de bump troca versions-maven-plugin por 'uv version X.Y.Z' (confirmado via docs.astral.sh/uv/guides/package/ - seta a versao explicita direto no pyproject.toml), e a validacao pos-bump troca xml.dom.minidom por tomllib (parse do pyproject.toml). uv ja instalado no job via astral-sh/setup-uv (mesmo SHA ja pinado no job pipeline deste ci.yml).",
+      "dependencies": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-23, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado uma vez em auth-service feat-020 (REVISE, 2 achados corrigidos: commit: explicito no release-action, persist-credentials:false) - reaproveitado aqui sem nova rodada. Unica adaptacao real: 'uv version X.Y.Z' confirmado via docs oficiais do Astral como o comando que escreve a versao explicita no pyproject.toml (nao so exibe - a variante sem argumento e read-only).",
+      "jira": "SV-576",
+      "subtasks": [
+        {
+          "id": "feat-012.1",
+          "name": "Job 'release' no ci.yml + .github/scripts/cut-changelog.py",
+          "status": "done",
+          "jira": "SV-577"
+        },
+        {
+          "id": "feat-012.2",
+          "name": "CHANGELOG e verificacao final",
+          "status": "not-started",
+          "jira": "SV-578",
+          "detail": "Fecha a parte de telegram-integration do epic-033 da raiz.",
+          "checklist": [
+            "Entrada em CHANGELOG.md (Unreleased)",
+            "./init.sh do servico e da raiz verdes",
+            "Delivery Reviewer rodado sobre o diff real desta feature",
+            "Verificacao real: push de teste em main confirma job 'release' rodando (tag/Release criados, pyproject.toml/CHANGELOG.md bumped corretamente, sem loop de CI)",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC 1) no mesmo commit"
+          ],
+          "validation": "Push real em main confirmado no GitHub Actions (job release verde, tag/Release visiveis no repositorio), init.sh verde, Delivery Reviewer sem achado real pendente, evidence preenchida.",
+          "owner": "agente"
+        }
+      ],
+      "evidence": ""
     }
   ]
 }
