@@ -424,7 +424,7 @@
       "name": "CI: gerar versao (semver + tag + Release + bump de pyproject.toml + corte de CHANGELOG) ao merge em main",
       "description": "6o harness do epic-033 da raiz, unico servico Python - mesmo mecanismo ja validado em auth-service feat-020 (ver aquele feature_list.json pro plan review completo, 2 subagentes independentes, pesquisa real), adaptado pra uv: o passo de bump troca versions-maven-plugin por 'uv version X.Y.Z' (confirmado via docs.astral.sh/uv/guides/package/ - seta a versao explicita direto no pyproject.toml), e a validacao pos-bump troca xml.dom.minidom por tomllib (parse do pyproject.toml). uv ja instalado no job via astral-sh/setup-uv (mesmo SHA ja pinado no job pipeline deste ci.yml).",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-23, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado uma vez em auth-service feat-020 (REVISE, 2 achados corrigidos: commit: explicito no release-action, persist-credentials:false) - reaproveitado aqui sem nova rodada. Unica adaptacao real: 'uv version X.Y.Z' confirmado via docs oficiais do Astral como o comando que escreve a versao explicita no pyproject.toml (nao so exibe - a variante sem argumento e read-only).",
       "jira": "SV-576",
       "subtasks": [
