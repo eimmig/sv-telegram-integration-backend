@@ -1,5 +1,5 @@
 {
-  "name": "StakeVault - Bot do Telegram",
+  "name": "Arka - Bot do Telegram",
   "nodes": [
     {
       "id": "telegram-trigger",
@@ -7,14 +7,14 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
       "position": [240, 300],
-      "webhookId": "stakevault-telegram-bot",
+      "webhookId": "arka-telegram-bot",
       "parameters": {
         "updates": ["message"]
       },
       "credentials": {
         "telegramApi": {
           "id": "1",
-          "name": "Telegram Bot (StakeVault)"
+          "name": "Telegram Bot (Arka)"
         }
       }
     },
@@ -86,7 +86,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "2",
-          "name": "X-Service-Key (StakeVault)"
+          "name": "X-Service-Key (Arka)"
         }
       }
     },
@@ -123,7 +123,7 @@
       "credentials": {
         "telegramApi": {
           "id": "1",
-          "name": "Telegram Bot (StakeVault)"
+          "name": "Telegram Bot (Arka)"
         }
       }
     },
@@ -214,7 +214,7 @@
       "credentials": {
         "httpHeaderAuth": {
           "id": "2",
-          "name": "X-Service-Key (StakeVault)"
+          "name": "X-Service-Key (Arka)"
         }
       }
     },
@@ -233,7 +233,7 @@
       "credentials": {
         "telegramApi": {
           "id": "1",
-          "name": "Telegram Bot (StakeVault)"
+          "name": "Telegram Bot (Arka)"
         }
       }
     }
