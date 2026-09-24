@@ -8,6 +8,9 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 ## [Unreleased]
 
 - Remover todos os comentários restantes do código, testes e configuração (convenção de zero comentário, `docs/convencoes.md`)
+
+## [0.1.0] - 2026-09-23
+
 - 18 apontamentos abertos do SonarCloud corrigidos (scripts bash, GitHub Actions pinadas por
   hash, `uv sync`/`uv run --no-build --locked`)
 - Corrigir chave do projeto no SonarCloud (`eimmig_sv-telegram-integration-backend`)
