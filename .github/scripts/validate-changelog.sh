@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-# Falha o PR se o CHANGELOG.md do servico tocado nao foi atualizado no mesmo diff.
-# Ver docs/CI-CD.md secao "Changelog por servico".
-#
 # Uso: validate-changelog.sh <caminho-do-changelog-relativo-a-raiz-do-repo>
-# Espera BASE_SHA e HEAD_SHA no ambiente (setados pelo workflow a partir do evento pull_request).
 set -euo pipefail
 
 changelog_path="${1:?uso: validate-changelog.sh <caminho-do-CHANGELOG.md>}"

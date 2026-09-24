@@ -424,7 +424,7 @@
       "name": "CI: gerar versao (semver + tag + Release + bump de pyproject.toml + corte de CHANGELOG) ao merge em main",
       "description": "6o harness do epic-033 da raiz, unico servico Python - mesmo mecanismo ja validado em auth-service feat-020 (ver aquele feature_list.json pro plan review completo, 2 subagentes independentes, pesquisa real), adaptado pra uv: o passo de bump troca versions-maven-plugin por 'uv version X.Y.Z' (confirmado via docs.astral.sh/uv/guides/package/ - seta a versao explicita direto no pyproject.toml), e a validacao pos-bump troca xml.dom.minidom por tomllib (parse do pyproject.toml). uv ja instalado no job via astral-sh/setup-uv (mesmo SHA ja pinado no job pipeline deste ci.yml).",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-23, Plan Reviewer (review-suite:ln-11-plan-reviewer) rodado uma vez em auth-service feat-020 (REVISE, 2 achados corrigidos: commit: explicito no release-action, persist-credentials:false) - reaproveitado aqui sem nova rodada. Unica adaptacao real: 'uv version X.Y.Z' confirmado via docs oficiais do Astral como o comando que escreve a versao explicita no pyproject.toml (nao so exibe - a variante sem argumento e read-only).",
       "jira": "SV-576",
       "subtasks": [
@@ -437,7 +437,7 @@
         {
           "id": "feat-012.2",
           "name": "CHANGELOG e verificacao final",
-          "status": "not-started",
+          "status": "done",
           "jira": "SV-578",
           "detail": "Fecha a parte de telegram-integration do epic-033 da raiz.",
           "checklist": [
@@ -451,7 +451,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "2 subtasks (SV-577/578, story SV-576) done, PRs #46/#47 (subtask->story) + #48 (story->develop->main, promocao real) - CI+SonarCloud verdes. Job 'release' identico ao desenhado/revisado em auth-service feat-020, adaptado pra uv (uv version X.Y.Z). Verificacao real end-to-end confirmada: push real em main (2026-09-23T23:09Z) - tag v0.1.0 criada, GitHub Release 'Latest' publicado, commit chore(release) empurrado pra main via RELEASE_TOKEN, sem loop de CI. Job 'deploy' (nao relacionado, pre-existente) falhou como esperado - KUBE_CONFIG nao alcanca o cluster a partir de runners hospedados (residual ja documentado). Fecha a parte de telegram-integration do epic-033 da raiz - unico servico Python."
     }
   ]
 }

@@ -1,7 +1,3 @@
-"""Loads the bot's user-facing messages by locale, selected from the Telegram
-update's `language_code` (see docs/CONVENTIONS.md "Internacionalizacao (i18n)").
-"""
-
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -19,9 +15,6 @@ def _load_locale(locale: str) -> dict[str, str]:
 
 
 def resolve_locale(language_code: str | None) -> str:
-    """Maps a Telegram `language_code` (e.g. "en", "pt-br", "es-AR") to one of the
-    three supported locales, falling back to `DEFAULT_LOCALE` when unrecognized.
-    """
     if not language_code:
         return DEFAULT_LOCALE
     subtag = language_code.strip().lower().split("-")[0]

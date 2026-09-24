@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Falha o build se o SonarCloud reportar issue ou security hotspot aberto.
---branch so aceita "main" (plano gratuito recusa outras branches, 403).
 
-Uso:
-    validate-sonar-issues.py --project-key eimmig_sv-telegram-integration-backend --pull-request 20
-    validate-sonar-issues.py --project-key eimmig_sv-telegram-integration-backend --branch main
-
-Espera SONAR_TOKEN no ambiente.
-"""
 from __future__ import annotations
 
 import argparse
