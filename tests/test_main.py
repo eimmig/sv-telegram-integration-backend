@@ -2,8 +2,6 @@ from fastapi.testclient import TestClient
 
 from telegram_integration.main import app
 
-# /health has no auth (Kubernetes probes hit it) - the header is harmless here, kept only for
-# consistency with the other test modules that do need it.
 client = TestClient(app, headers={"X-Service-Key": "test-service-key"})
 
 

@@ -90,8 +90,6 @@ def test_returns_complete_after_resolving_every_catalog(
             "text": "Bet365, odd 1.85, valor R$ 50,00",
         },
     )
-    # Betting house name matched the (stubbed) catalog exactly, so it's auto-resolved -
-    # sport/league/market are always asked, never auto-chosen.
     assert first.json()["status"] == "pending"
     assert first.json()["message"].startswith("Qual o esporte")
 
@@ -126,7 +124,6 @@ def test_returns_complete_after_resolving_every_catalog(
     assert body["bet"]["sportId"] == "sp-1"
     assert body["bet"]["leagueId"] == "lg-1"
     assert body["bet"]["marketId"] == "mk-1"
-    # Not extracted from text (see extraction.py) - always defaults to today.
     assert body["bet"]["bet_date"] == datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()
 
 
@@ -145,7 +142,6 @@ def test_extracts_from_a_photo_via_ocr(client: TestClient) -> None:
 
     body = response.json()
     assert body["status"] == "pending"
-    # Odd was found (from the OCR'd image), so the next question is about stake.
     assert body["message"] == "Quanto você apostou (valor em R$)?"
 
 
@@ -216,10 +212,6 @@ def test_multi_turn_conversation_carries_state_across_separate_requests(
 
 
 def _reach_complete(client: TestClient, telegram_user_id: str, chat_id: str) -> dict[str, object]:
-    """Drives a fresh conversation through every question (betting house
-    auto-matches "Bet365") up to the final submission call, returning that
-    last response.
-    """
     client.post(
         "/bets/capture",
         json={
@@ -230,7 +222,7 @@ def _reach_complete(client: TestClient, telegram_user_id: str, chat_id: str) -> 
         },
     )
     response = None
-    for _ in range(3):  # sport, league, market
+    for _ in range(3):
         response = client.post(
             "/bets/capture",
             json={
@@ -275,9 +267,6 @@ def test_blocked_when_submission_fails_validation(
         "apostado). Envie os dados da aposta novamente."
     )
 
-    # Unlike NO_TELEGRAM_LINK/SERVICE_UNAVAILABLE, the bet's own data is what's
-    # wrong here - preserving it would make every retry fail identically forever,
-    # so state is cleared and the next message starts a fresh conversation.
     retry = client.post(
         "/bets/capture",
         json={
@@ -320,9 +309,6 @@ def test_blocked_when_a_resolved_catalog_entry_no_longer_exists(
         "Uma das opções escolhidas não existe mais. Envie os dados da aposta novamente."
     )
 
-    # A stale catalog id (rare race - deleted mid-conversation) can't be fixed by
-    # blindly retrying the same submission - state is cleared so the user
-    # re-resolves against the current catalog instead of looping forever.
     retry = client.post(
         "/bets/capture",
         json={
@@ -421,5 +407,5 @@ def test_idempotency_key_falls_back_when_telegram_update_id_is_missing(
 
     assert body["status"] == "complete"
     assert len(captured_keys) == 1
-    assert captured_keys[0]  # non-empty fallback (uuid4), just not the "user:update_id" shape
+    assert captured_keys[0]
     assert ":" not in captured_keys[0]

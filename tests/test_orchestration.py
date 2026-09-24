@@ -73,11 +73,6 @@ def test_betting_house_fuzzy_match_skips_the_question(redis_client: redis.Redis)
 def test_ambiguous_betting_house_match_falls_back_to_the_question(
     redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Two catalog entries that normalize to the same name (case-variant
-    duplicates aren't blocked by bets-service's UNIQUE(name) if it's
-    case-sensitive) must never let the fuzzy match silently pick one - a wrong
-    silent pick here means the bet gets attributed to the wrong betting house.
-    """
 
     def ambiguous_betting_houses(
         resource: str, telegram_user_id: str, correlation_id: str
@@ -102,11 +97,6 @@ def test_ambiguous_betting_house_match_falls_back_to_the_question(
 def test_catalog_answer_resolves_against_the_snapshot_taken_at_question_time(
     redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The sport list can change between the question and the answer (another
-    conversation registers a new one, or [[web]] edits the catalog) - the
-    numeric reply must resolve against what THIS user was actually shown, not
-    whatever fetch_catalog would return if called again.
-    """
     monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
     asked = handle_message(
         redis_client, "user-snapshot", "pt-BR", "Bet365, odd 1.85, valor R$ 50,00", "corr-1"
@@ -120,8 +110,6 @@ def test_catalog_answer_resolves_against_the_snapshot_taken_at_question_time(
 
     monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", changed_sports)
 
-    # Answers "1" - the first option in the snapshot ("Futebol", sp-1), even
-    # though "1" in the now-changed live catalog would mean "Basquete".
     league_question = handle_message(redis_client, "user-snapshot", "pt-BR", "1", "corr-1")
     assert league_question.status == "pending"
     assert league_question.message.startswith("Qual a liga")
@@ -138,10 +126,10 @@ def test_catalog_answer_resolves_against_the_snapshot_taken_at_question_time(
 
 def test_full_multi_turn_flow_resolves_every_catalog_and_completes(redis_client: redis.Redis) -> None:
     handle_message(redis_client, "user-d", "pt-BR", "odd 1.85", "corr-1")
-    handle_message(redis_client, "user-d", "pt-BR", "50", "corr-1")  # -> asks betting house
-    handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")  # -> asks sport
-    handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")  # -> asks league
-    result = handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")  # -> asks market
+    handle_message(redis_client, "user-d", "pt-BR", "50", "corr-1")
+    handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")
+    handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")
+    result = handle_message(redis_client, "user-d", "pt-BR", "1", "corr-1")
 
     assert result.status == "pending"
     assert result.message == "Qual o mercado dessa aposta? Responda com o número da opção:\n1. Vencedor"
@@ -157,9 +145,6 @@ def test_full_multi_turn_flow_resolves_every_catalog_and_completes(redis_client:
     assert final.bet["sportId"] == "sp-1"
     assert final.bet["leagueId"] == "lg-1"
     assert final.bet["marketId"] == "mk-1"
-    # Not cleared here - main.py only clears it after actually submitting the
-    # bet to bets-service (see bets_client.py); a retry (any message) reaches
-    # "complete" again immediately since nothing is left to resolve.
     pending = get_pending(redis_client, "user-d")
     assert pending is not None
     assert pending.awaiting_catalog is None
@@ -242,9 +227,6 @@ def test_bet_date_defaults_to_today_when_not_otherwise_known(redis_client: redis
 
 
 def test_bet_date_uses_brasilia_calendar_day_near_midnight_utc(redis_client: redis.Redis) -> None:
-    # 23:30 in Brasilia on 2026-01-15 is already 02:30 UTC on 2026-01-16 - a UTC-based
-    # default would report the wrong calendar day for a bet placed just before midnight
-    # in Brasilia (the timezone every real user of this bot is in).
     fixed_now = datetime(2026, 1, 15, 23, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))
     with patch("telegram_integration.orchestration.datetime") as mock_datetime:
         mock_datetime.now.return_value = fixed_now

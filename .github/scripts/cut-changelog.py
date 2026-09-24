@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Corta o CHANGELOG.md na release: renomeia a secao "## [Unreleased]" ativa para
-"## [<versao>] - <data>" e abre um "## [Unreleased]" novo vazio acima dela.
 
-So a PRIMEIRA ocorrencia de "## [Unreleased]" e trocada (str.replace com count=1) -
-idempotente entre releases: a proxima rodada acha o "## [Unreleased]" recem-aberto,
-nunca as secoes ja versionadas mais abaixo no arquivo.
-
-Uso: cut-changelog.py <caminho-do-CHANGELOG.md> <versao sem 'v', ex: 1.2.0>
-"""
 import datetime
 import pathlib
 import sys

@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Verification for telegram-integration (Python 3.12+).
 set -euo pipefail
 
-# Windows' official python.org installer only ships 'python.exe', not 'python3' — try
-# both, in that order. A fake Microsoft Store stub can also resolve on PATH but only
-# print a redirect message instead of a version; skip it and try the next candidate.
 PYTHON=""
 for candidate in python3 python; do
   if command -v "$candidate" >/dev/null 2>&1; then
