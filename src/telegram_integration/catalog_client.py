@@ -1,11 +1,3 @@
-"""HTTP client for the tenant catalogs (sports/leagues/markets/betting-houses) that
-`bets-service` exposes and `POST /api/v1/bets` requires as foreign keys. Unlike
-`auth_client.py`, this call goes THROUGH the api-gateway (X-Service-Key +
-X-Telegram-User-Id, same pair used for `POST /api/v1/bets`) - no structural
-circularity here, the Gateway resolves the tenant the same way it would for the
-final bet submission.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -35,13 +27,6 @@ def _service_key() -> str:
 
 
 def fetch_catalog(resource: str, telegram_user_id: str, correlation_id: str) -> list[CatalogEntry] | None:
-    """Fetches every entry of one catalog resource ("sports", "leagues", "markets"
-    or "betting-houses") for the tenant linked to `telegram_user_id`, paging until
-    exhausted - the default page size (20) would silently hide entries from a
-    tenant with a larger catalog. Returns None (not an empty list) when the
-    catalog can't be reached at all, so callers can tell "no entries yet" apart
-    from "couldn't ask".
-    """
     entries: list[CatalogEntry] = []
     page = 0
     while True:

@@ -16,8 +16,6 @@ from telegram_integration.ocr import extract_text
 from telegram_integration.orchestration import handle_message
 
 app = FastAPI(title="telegram-integration")
-# 10 MiB: photoBase64 carries a Telegram bot photo (compressed by the Bot API) - well above any
-# real message, generous enough to never reject a legitimate one.
 app.add_middleware(BodySizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
 
 
@@ -26,8 +24,6 @@ def _expected_service_key() -> str:
 
 
 def require_service_key(x_service_key: Annotated[str | None, Header()] = None) -> None:
-    """n8n -> this service, same X-Service-Key credential already used for this
-    service's own outbound calls to api-gateway (bets_client.py/catalog_client.py)."""
     expected = _expected_service_key()
     if not expected or x_service_key != expected:
         raise HTTPException(
@@ -51,12 +47,6 @@ _SUBMIT_OUTCOME_MESSAGE_KEY = {
     SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error",
 }
 _SUBMIT_SUCCESS_OUTCOMES = (SubmitOutcome.CREATED, SubmitOutcome.ALREADY_SUBMITTED)
-# NO_TELEGRAM_LINK/SERVICE_UNAVAILABLE keep the resolved bet in Redis on purpose -
-# the data itself is fine, only an external condition needs to change before a
-# retry can succeed (link the account; wait out the outage). CATALOG_ENTRY_NOT_FOUND
-# and VALIDATION_FAILED mean the bet's own data is what's wrong - preserving it
-# would just make every retry fail the same way forever, so those also clear state
-# alongside a real success.
 _SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
     *_SUBMIT_SUCCESS_OUTCOMES,
     SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,

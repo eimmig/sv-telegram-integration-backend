@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""Confere que os arquivos de traducao pt-BR/en-US/es tem exatamente o mesmo conjunto de
-chaves. Ver docs/CI-CD.md secao "Os 5 passos" (passo 2) e docs/CONVENTIONS.md secao
-"Internacionalizacao (i18n)" - os tres locales sempre em sincronia e requisito de `done`.
 
-Uso:
-    validate-i18n-keys.py --format properties \\
-        --file pt-BR=services/auth-service/src/main/resources/messages_pt_BR.properties \\
-        --file en-US=services/auth-service/src/main/resources/messages_en_US.properties \\
-        --file es=services/auth-service/src/main/resources/messages_es.properties
-
-    validate-i18n-keys.py --format json \\
-        --file pt-BR=apps/web/src/assets/i18n/pt-BR.json \\
-        --file en-US=apps/web/src/assets/i18n/en-US.json \\
-        --file es=apps/web/src/assets/i18n/es.json
-"""
 from __future__ import annotations
 
 import argparse

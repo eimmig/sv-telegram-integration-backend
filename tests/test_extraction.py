@@ -38,9 +38,6 @@ def test_extracts_known_betting_house_by_name() -> None:
 
 
 def test_does_not_extract_bet_date_from_text() -> None:
-    # Not attempted on purpose (see extraction.py's module docstring) - a
-    # bet-slip usually shows the event's date, not necessarily when the bet
-    # was placed. orchestration.py defaults it to today instead.
     result = extract_fields("Aposta feita em 08/09/2026")
 
     assert result.bet_date is None
@@ -75,8 +72,6 @@ def test_missing_required_fields_empty_when_everything_required_is_set() -> None
 
 
 def test_parse_direct_answer_reads_bare_stake_without_currency_prefix() -> None:
-    # A direct reply to "how much did you stake?" is unlikely to include R$/$
-    # even though extract_fields requires that prefix when scanning free text.
     assert parse_direct_answer("stake", "50") == "50"
 
 

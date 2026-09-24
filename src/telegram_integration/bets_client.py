@@ -1,11 +1,3 @@
-"""HTTP client for the final `POST /api/v1/bets` submission, through api-gateway
-(same X-Service-Key/X-Telegram-User-Id pair already used by catalog_client.py -
-the Gateway resolves the tenant and injects X-User-Id/X-Tenant-Id before
-bets-service ever sees the request). Doesn't duplicate bets-service's business
-rules (RN02/RN03/RN06/RN07) - only maps its response into an outcome the bot
-can turn into a localized message.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -21,7 +13,7 @@ _TIMEOUT_SECONDS = 5.0
 
 class SubmitOutcome(Enum):
     CREATED = auto()
-    ALREADY_SUBMITTED = auto()  # idempotent replay (200, not 201) - still a success
+    ALREADY_SUBMITTED = auto()
     NO_TELEGRAM_LINK = auto()
     CATALOG_ENTRY_NOT_FOUND = auto()
     VALIDATION_FAILED = auto()
@@ -48,10 +40,6 @@ def _service_key() -> str:
 def submit_bet(
     bet: dict[str, str | None], telegram_user_id: str, idempotency_key: str, correlation_id: str
 ) -> SubmitOutcome:
-    """`bet` must already carry the resolved catalog ids (bettingHouseId/sportId/
-    leagueId/marketId, see orchestration.py) plus odd/stake/bet_date - it's the
-    dict `handle_message` returns on `status == "complete"`.
-    """
     body = {
         "bettingHouseId": bet["bettingHouseId"],
         "sportId": bet["sportId"],
@@ -59,8 +47,6 @@ def submit_bet(
         "marketId": bet["marketId"],
         "stake": bet["stake"],
         "odd": bet["odd"],
-        # CreateBetRequest.betDate is an Instant, not a bare date - the date-only
-        # ISO string orchestration.py stores would fail Jackson deserialization.
         "betDate": f"{bet['bet_date']}T00:00:00Z",
     }
     try:

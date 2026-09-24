@@ -13,30 +13,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 1. Changelog - ver docs/CI-CD.md (vault local, nao versionado neste repo)
+      # 1. Changelog
       - name: Validar atualizacao do CHANGELOG.md
-        # So no PR story -> develop/main, ver docs/CI-CD.md "Quais passos rodam em qual PR":
-        # a linha de cada subtask nasce (via jira_story.py) antes da branch daquela subtask
-        # existir, entao o diff de uma PR subtask/ -> story nunca toca CHANGELOG.md por
-        # sequenciamento, nao por esquecimento real - exigir o toque tambem ali quebraria
-        # todo PR de subtask.
         if: github.event_name == 'pull_request' && (github.base_ref == 'develop' || github.base_ref == 'main')
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: .github/scripts/validate-changelog.sh CHANGELOG.md
 
-      # 2. Chaves de traducao - ver docs/CONVENTIONS.md secao "Internacionalizacao (i18n)"
-      # Formato JSON (decisao registrada em docs/DECISIONS-LOG.md - vault local)
       - name: Validar chaves de traducao (pt-BR/en-US/es)
-        # Guarda propria (locales/pt-BR.json), independente do pyproject.toml que guarda os
-        # passos 3-5: feat-001 deste servico foi dividida em subtasks incrementais e
-        # pyproject.toml nasce antes de locales/ existir - guardar so por pyproject.toml
-        # quebraria o PR da subtask de bootstrap por sequenciamento, nao por defeito real
-        # (mesma armadilha ja documentada em docs/CI-CD.md, corrigida proativamente aqui).
-        # Caminho movido para dentro do pacote (feat-008, 2026-09-10): o antigo locales/ na
-        # raiz do repositorio nunca era instalado com o pacote (path relativo em i18n.py so
-        # funcionava com install editable) - achado real testando o container de producao.
         if: hashFiles('src/telegram_integration/locales/pt-BR.json') != ''
         run: |
           python3 .github/scripts/validate-i18n-keys.py --format json \
@@ -45,25 +30,16 @@ jobs:
             --file es=src/telegram_integration/locales/es.json
 
       - name: Instalar uv
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
         uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3.2.4
 
       - uses: actions/setup-python@v5
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
         with:
           python-version: "3.12"
 
-      # 3. Build (instalacao de dependencias + lint, equivalente pratico de "build" em Python)
+      # 3. Build
       - name: Build
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
         run: |
           uv sync --no-build --locked
@@ -71,43 +47,26 @@ jobs:
 
       # 4. Testes unitarios + cobertura
       - name: Instalar Tesseract OCR (feat-002 - extracao de bilhete via foto)
-        # Guarda propria por ocr.py (existe a partir de feat-002.2) - sem isso o teste de
-        # OCR falha com "tesseract is not installed" no runner, que nao tem o binario por
-        # padrao (so pip instala o wrapper Python, nao o motor de OCR em si).
         if: hashFiles('src/telegram_integration/ocr.py') != ''
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-por
       - name: Testes unitarios e cobertura
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != ''
         run: uv run --no-build --locked pytest --cov=. --cov-report=xml
 
-      # 5. Qualidade de codigo e cobertura (SonarCloud)
+      # 5. Qualidade de codigo e cobertura
       - name: SonarCloud
-        # Pulado em PR de subtask: cobertura parcial de uma feature em andamento
-        # reprovaria o quality gate sem indicar defeito real.
-        # Guarda por arquivo-marcador: enquanto o projeto nao existe (repositorio so com
-        # harness), este passo e pulado em vez de falhar. Liga sozinho no feat-001 deste
-        # servico, quando o marcador passa a existir. Ver docs/CI-CD.md.
         if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main')
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # sonar.qualitygate.wait pulado em qualquer push direto (main incluso) - mesma causa
-          # raiz do passo 6: a API do plano gratuito recusa computar o gate fora de PR (primeira
-          # analise de uma branch longa nova sem leak period definido devolve "NONE" em vez de
-          # "OK"/"ERROR", e o plugin trata como reprovado). Sem o skip, o passo sempre passaria
-          # mesmo com o gate reprovado, ja que o scanner so envia os dados e nao espera o
-          # processamento assincrono do lado do SonarCloud. Ver docs/CI-CD.md.
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.host.url=https://sonarcloud.io
             ${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}
 
-      # 6. Gate de issue/hotspot do SonarCloud - pulado em qualquer push direto (mesmo racional do passo 5)
+      # 6. Gate de issue/hotspot do SonarCloud
       - name: Validar zero issues no SonarCloud
         if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && github.event_name != 'push'
         env:
@@ -152,7 +111,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
-      # kubectl ja vem preinstalado no runner ubuntu-latest - sem action de terceiro
       - name: Configurar kubeconfig
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
@@ -178,9 +136,6 @@ jobs:
 
       - uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3.2.4
 
-      # Calcula a proxima versao a partir de Conventional Commits desde a ultima tag - so
-      # calcula, nao cria a tag (isso e o passo "Criar tag e GitHub Release" mais abaixo).
-      # github.token de leitura basta aqui, nada disto e bloqueado por branch protection.
       - name: Calcular proxima versao (Conventional Commits)
         id: semver
         uses: ietf-tools/semver-action@c90370b2958652d71c06a3484129a4d423a6d8a8 # v1.11.0
@@ -198,13 +153,6 @@ jobs:
       - name: Cortar CHANGELOG.md
         run: python3 .github/scripts/cut-changelog.py CHANGELOG.md ${{ steps.semver.outputs.nextStrict }}
 
-      # main tem required status check "pipeline" - o GITHUB_TOKEN padrao roda como
-      # github-actions[bot], que nao e admin e seria rejeitado empurrando um commit novo
-      # (nenhum check rodou pra ele ainda). RELEASE_TOKEN (PAT do dono/admin, ver
-      # docs/pipeline-ci-cd.md) bypassa isso do mesmo jeito que um push manual do dono
-      # bypassaria - usado so aqui, embutido na URL (vida curta de um comando), nunca
-      # persistido no credential helper (persist-credentials: false acima). [skip ci] evita
-      # o loop: PAT (diferente de GITHUB_TOKEN) dispara o workflow de novo por padrao.
       - name: Commit e push da release
         id: release-commit
         env:
@@ -222,8 +170,6 @@ jobs:
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # commit: aponta explicitamente pro commit que acabou de ser empurrado (o bump) -
-      # sem isso a action usaria o commit que disparou o job, ANTES do bump.
       - name: Criar tag e GitHub Release
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:

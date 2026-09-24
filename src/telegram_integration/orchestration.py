@@ -1,15 +1,3 @@
-"""Orchestrates one incoming n8n-normalized message into either a follow-up
-question (a required field or catalog choice is still missing) or a
-captured-so-far result. Two kinds of follow-up question exist: a free-text
-field (odd/stake, see extraction.py) and a numbered catalog choice
-(sport/league/market/betting_house, resolved against the tenant's
-bets-service catalog via catalog_client.py - see docs/DECISIONS-LOG.md
-2026-09-08 "Resolucao de catalogo... no fluxo Telegram"). Actually submitting
-the resolved bet to bets-service is main.py's job (bets_client.py), not
-this module's - "complete" here means "every field and catalog id resolved,
-ready to submit", not "already submitted".
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,15 +23,8 @@ _QUESTION_KEYS = {
     "stake": "ask_stake",
 }
 
-# First timezone convention in the project (see docs/CONVENTIONS.md "Timezone padrao") - bets
-# are placed by Brazilian users, so "today" must mean today in Brasilia, not UTC (a bet placed
-# at 23h BRT was landing on tomorrow's date under UTC).
 _DEFAULT_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
-# Order is arbitrary but fixed - betting_house first since it's the only one
-# extraction.py ever has a best-effort name for (fuzzy match may skip the
-# question entirely); sport/league/market always ask, per the decision that
-# nothing is ever auto-chosen for them.
 _CATALOG_ORDER = ("betting_house", "sport", "league", "market")
 _CATALOG_RESOURCE = {
     "betting_house": "betting-houses",
@@ -79,12 +60,6 @@ class CaptureResult:
 
 
 def _merge(existing: dict[str, str | None], newly_extracted: ExtractedBet) -> dict[str, str | None]:
-    """Always returns the full ExtractedBet shape (every field name present,
-    even as None) - a sparse dict here would make the "bet" output
-    inconsistent between a single complete message (full shape) and a
-    multi-turn conversation (would otherwise only contain whichever fields
-    were actually ever assigned a value).
-    """
     merged = dict(existing)
     for name, value in newly_extracted.__dict__.items():
         if merged.get(name) is None:
@@ -99,11 +74,6 @@ def _format_choice_question(question_key: str, options: list[CatalogEntry], lang
 
 
 def _fuzzy_match_betting_house(name: str | None, options: list[CatalogEntry]) -> CatalogEntry | None:
-    """Case-insensitive exact match only - a substring match (e.g. "Bet" against
-    both "Betano" and "Betfair") would be ambiguous, and a wrong silent match is
-    worse than falling back to the same numbered-list question used for the
-    catalogs that are never guessed at all.
-    """
     if name is None:
         return None
     lowered = name.strip().lower()
@@ -134,9 +104,6 @@ def _advance_catalog(
 
         options = fetch_catalog(_CATALOG_RESOURCE[catalog_type], telegram_user_id, correlation_id)
         if options is None:
-            # Gateway/bets-service unreachable - not the user's fault. Save
-            # progress so far so a retry doesn't lose the fields/catalog ids
-            # already resolved this conversation.
             save_pending(client, telegram_user_id, PendingBet(fields=fields, catalog_ids=catalog_ids))
             error_message = get_message("generic_error", language_code)
             return CaptureResult(status="blocked", message=error_message, bet=None)
@@ -170,11 +137,6 @@ def _advance_catalog(
         question = _format_choice_question(_CATALOG_QUESTION_KEYS[catalog_type], options, language_code)
         return CaptureResult(status="pending", message=question, bet=None)
 
-    # Not cleared here on purpose: main.py still needs to submit the bet to
-    # bets-service. If that submission fails, the resolved fields/catalog ids
-    # stay in Redis so the user can retry with any message instead of
-    # re-answering every question - this branch already has nothing left to
-    # resolve, so the next call reaches "complete" again immediately.
     save_pending(client, telegram_user_id, PendingBet(fields=fields, catalog_ids=catalog_ids))
     confirmation = get_message("bet_captured", language_code)
     return CaptureResult(status="complete", message=confirmation, bet={**fields, **catalog_ids})
@@ -189,7 +151,7 @@ def _handle_catalog_answer(
     pending: PendingBet,
 ) -> CaptureResult:
     question = pending.awaiting_catalog
-    assert question is not None  # only called when it isn't
+    assert question is not None
     index = _parse_choice_index(text, len(question.options))
 
     if index is None:
@@ -219,8 +181,6 @@ def handle_message(
         return _handle_catalog_answer(client, telegram_user_id, language_code, correlation_id, text, pending)
 
     if pending is not None and pending.awaiting_field is not None:
-        # The user was asked a specific question - their whole reply is the answer
-        # to that field, not run back through the generic heuristic extractor.
         fields = dict(pending.fields)
         fields[pending.awaiting_field] = parse_direct_answer(pending.awaiting_field, text)
     else:
@@ -235,10 +195,6 @@ def handle_message(
         return CaptureResult(status="pending", message=question, bet=None)
 
     if fields.get("bet_date") is None:
-        # Not extracted from text on purpose (see extraction.py's module
-        # docstring) - a bet-slip normally shows the event's date, not
-        # necessarily when the bet was placed, and today is right far more
-        # often than a guess from the slip would be.
         fields["bet_date"] = datetime.now(_DEFAULT_TIMEZONE).date().isoformat()
 
     catalog_ids = dict(pending.catalog_ids) if pending is not None else {}

@@ -89,7 +89,7 @@ def test_health_needs_no_service_key() -> None:
 
 def test_oversized_body_is_rejected_before_reaching_the_route(redis_client: redis.Redis) -> None:
     client = TestClient(app, headers={"X-Service-Key": "test-service-key"})
-    oversized_text = "x" * (11 * 1024 * 1024)  # over the 10 MiB limit
+    oversized_text = "x" * (11 * 1024 * 1024)
 
     response = client.post("/bets/capture", json={**_CAPTURE_PAYLOAD, "text": oversized_text})
 

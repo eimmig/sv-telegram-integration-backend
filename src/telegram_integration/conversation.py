@@ -1,10 +1,3 @@
-"""Conversation state for the follow-up-question fallback: when field extraction
-(see `extraction.py`) can't confidently fill every field, the bot asks the user
-one field at a time and needs to remember, between separate webhook calls, what
-was already collected. Backed by the Redis instance already provisioned in
-`infra/` for `stats-service` (see docs/DECISIONS-LOG.md 2026-09-08).
-"""
-
 from __future__ import annotations
 
 import json
@@ -28,11 +21,6 @@ def build_redis_client() -> redis.Redis:  # pragma: no cover - thin env-var wiri
 
 @dataclass
 class CatalogQuestion:
-    """A numbered-list question already asked, with the exact options shown -
-    snapshotted so a later numeric reply resolves against what the user actually
-    saw, not whatever the tenant's catalog looks like by the time they answer
-    (which could have gained/lost entries in between).
-    """
 
     catalog_type: str
     options: list[dict[str, str]]

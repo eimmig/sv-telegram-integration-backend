@@ -1,10 +1,3 @@
-"""Rejects oversized request bodies before they reach a route handler.
-
-Checks Content-Length up front (cheap, no buffering) - doesn't protect against a
-chunked body without that header, but n8n's HTTP Request node always sets it for a
-JSON payload, which is the only client this service has.
-"""
-
 from __future__ import annotations
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
