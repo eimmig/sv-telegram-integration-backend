@@ -467,7 +467,7 @@
         {
           "id": "feat-013.1",
           "name": "ci.yml: push so pra main habilita os 2 steps de SonarCloud, com continue-on-error",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-676",
           "detail": "Mesma correcao de services/auth-service feat-022.2, adaptada pra sintaxe ternaria (sonarqube-scan-action, nao WAIT_FLAG imperativo).",
           "checklist": [
