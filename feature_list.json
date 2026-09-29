@@ -460,7 +460,7 @@
       "scope": "ci.yml: push pra main passa a rodar os 2 steps (continue-on-error, nao bloqueia deploy/release); push pra develop continua pulado (API do SonarCloud recusa branch != main com 403). Unico servico Python do projeto - usa sonarqube-scan-action + expressao ternaria do GitHub Actions em vez do WAIT_FLAG imperativo dos servicos Java.",
       "description": "Achado real do usuario (2026-09-29), parte do epic-038 da raiz: o mesmo gap ja corrigido em services/auth-service feat-022 (e replicado em bets-service/stats-service/api-gateway) existe aqui, so que na forma de uma expressao ternaria do GitHub Actions (${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}) em vez do WAIT_FLAG imperativo - mesmo efeito (pula em TODO push, nao so develop). Correcao: inverter a condicao pra so pular quando push E ref_name==develop (regra geral ja documentada em docs/pipeline-ci-cd.md 'Sexta armadilha' - expressao ternaria cond && A || B so e segura quando A nunca pode ser vazio; aqui A='-Dsonar.qualitygate.wait=true', sempre nao-vazio, entao a forma e segura, so a condicao precisa mudar).",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-09-29, Plan Reviewer reaproveitado condensado de services/auth-service feat-022 (ja replicado sem achado novo em bets-service/stats-service/api-gateway) - mesma correcao de fundo, adaptada pra sintaxe ternaria do ci.yml deste servico (unico Python). Confirmado que a expressao ternaria atual e segura de inverter (ramo verdadeiro nunca e string vazia, ver Sexta armadilha em docs/pipeline-ci-cd.md - nao repete o bug daquele achado).",
       "jira": "SV-675",
       "subtasks": [
@@ -480,7 +480,7 @@
           "owner": "agente"
         }
       ],
-      "evidence": ""
+      "evidence": "Fechada em 2026-09-29. 1 subtask (SV-676, story SV-675), PR #52 (subtask->story) + #53 (story->develop). Replica em telegram-integration a correcao de services/auth-service feat-022, adaptada pra sintaxe ternaria (unico servico Python - sonarqube-scan-action). CI+SonarCloud verdes nos 2 PRs. Fecha a parte telegram-integration do epic-038 da raiz."
     }
   ]
 }
