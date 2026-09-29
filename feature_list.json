@@ -452,6 +452,35 @@
         }
       ],
       "evidence": "2 subtasks (SV-577/578, story SV-576) done, PRs #46/#47 (subtask->story) + #48 (story->develop->main, promocao real) - CI+SonarCloud verdes. Job 'release' identico ao desenhado/revisado em auth-service feat-020, adaptado pra uv (uv version X.Y.Z). Verificacao real end-to-end confirmada: push real em main (2026-09-23T23:09Z) - tag v0.1.0 criada, GitHub Release 'Latest' publicado, commit chore(release) empurrado pra main via RELEASE_TOKEN, sem loop de CI. Job 'deploy' (nao relacionado, pre-existente) falhou como esperado - KUBE_CONFIG nao alcanca o cluster a partir de runners hospedados (residual ja documentado). Fecha a parte de telegram-integration do epic-033 da raiz - unico servico Python."
+    },
+    {
+      "id": "feat-013",
+      "name": "Validar SonarCloud tambem em push pra main (nao so pull_request)",
+      "goal": "Fechar o mesmo gap de CI ja corrigido em auth-service feat-022: validate-sonar-issues.py e sonar.qualitygate.wait nunca rodavam em push, so em pull_request - nenhum ponto do pipeline revalidava a branch inteira apos merge.",
+      "scope": "ci.yml: push pra main passa a rodar os 2 steps (continue-on-error, nao bloqueia deploy/release); push pra develop continua pulado (API do SonarCloud recusa branch != main com 403). Unico servico Python do projeto - usa sonarqube-scan-action + expressao ternaria do GitHub Actions em vez do WAIT_FLAG imperativo dos servicos Java.",
+      "description": "Achado real do usuario (2026-09-29), parte do epic-038 da raiz: o mesmo gap ja corrigido em services/auth-service feat-022 (e replicado em bets-service/stats-service/api-gateway) existe aqui, so que na forma de uma expressao ternaria do GitHub Actions (${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}) em vez do WAIT_FLAG imperativo - mesmo efeito (pula em TODO push, nao so develop). Correcao: inverter a condicao pra so pular quando push E ref_name==develop (regra geral ja documentada em docs/pipeline-ci-cd.md 'Sexta armadilha' - expressao ternaria cond && A || B so e segura quando A nunca pode ser vazio; aqui A='-Dsonar.qualitygate.wait=true', sempre nao-vazio, entao a forma e segura, so a condicao precisa mudar).",
+      "dependencies": [],
+      "status": "in-progress",
+      "plan_review": "2026-09-29, Plan Reviewer reaproveitado condensado de services/auth-service feat-022 (ja replicado sem achado novo em bets-service/stats-service/api-gateway) - mesma correcao de fundo, adaptada pra sintaxe ternaria do ci.yml deste servico (unico Python). Confirmado que a expressao ternaria atual e segura de inverter (ramo verdadeiro nunca e string vazia, ver Sexta armadilha em docs/pipeline-ci-cd.md - nao repete o bug daquele achado).",
+      "jira": "SV-675",
+      "subtasks": [
+        {
+          "id": "feat-013.1",
+          "name": "ci.yml: push so pra main habilita os 2 steps de SonarCloud, com continue-on-error",
+          "status": "in-progress",
+          "jira": "SV-676",
+          "detail": "Mesma correcao de services/auth-service feat-022.2, adaptada pra sintaxe ternaria (sonarqube-scan-action, nao WAIT_FLAG imperativo).",
+          "checklist": [
+            "Expressao ternaria do step SonarCloud: condicao vira !(github.event_name == 'push' && github.ref_name == 'develop').",
+            "Step 'Validar zero issues no SonarCloud': condicao vira ... && !(github.event_name == 'push' && github.ref_name == 'develop').",
+            "continue-on-error: true nos 2 steps quando github.event_name == 'push'.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "yaml.safe_load no ci.yml; PR subtask->story com CI verde; PR story->develop confirma SonarCloud Code Analysis pass.",
+          "owner": "agente"
+        }
+      ],
+      "evidence": ""
     }
   ]
 }

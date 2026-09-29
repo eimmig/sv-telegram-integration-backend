@@ -57,6 +57,7 @@ jobs:
       - name: SonarCloud
         if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main')
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        continue-on-error: ${{ github.event_name == 'push' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -64,11 +65,12 @@ jobs:
           args: >
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.host.url=https://sonarcloud.io
-            ${{ github.event_name != 'push' && '-Dsonar.qualitygate.wait=true' || '' }}
+            ${{ !(github.event_name == 'push' && github.ref_name == 'develop') && '-Dsonar.qualitygate.wait=true' || '' }}
 
       # 6. Gate de issue/hotspot do SonarCloud
       - name: Validar zero issues no SonarCloud
-        if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && github.event_name != 'push'
+        if: hashFiles('pyproject.toml') != '' && (github.event_name != 'pull_request' || github.base_ref == 'develop' || github.base_ref == 'main') && !(github.event_name == 'push' && github.ref_name == 'develop')
+        continue-on-error: ${{ github.event_name == 'push' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
