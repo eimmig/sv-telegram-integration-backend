@@ -8,6 +8,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 ## [Unreleased]
 
 - Remover todos os comentários restantes do código, testes e configuração (convenção de zero comentário, `docs/convencoes.md`)
+- [SV-675](https://stakevault.atlassian.net/browse/SV-675) - Validar SonarCloud tambem em push pra main (nao so pull_request)
+- [SV-676](https://stakevault.atlassian.net/browse/SV-676) - ci.yml: push so pra main habilita os 2 steps de SonarCloud, com continue-on-error
 
 ## [0.1.0] - 2026-09-23
 
