@@ -7,6 +7,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-30
+
 ## [0.1.1] - 2026-09-24
 
 - Remover todos os comentários restantes do código, testes e configuração (convenção de zero comentário, `docs/convencoes.md`)
