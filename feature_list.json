@@ -481,6 +481,17 @@
         }
       ],
       "evidence": "Fechada em 2026-09-29. 1 subtask (SV-676, story SV-675), PR #52 (subtask->story) + #53 (story->develop). Replica em telegram-integration a correcao de services/auth-service feat-022, adaptada pra sintaxe ternaria (unico servico Python - sonarqube-scan-action). CI+SonarCloud verdes nos 2 PRs. Fecha a parte telegram-integration do epic-038 da raiz."
+    },
+    {
+      "id": "feat-014",
+      "name": "Usuario sem vinculo recebe erro generico em vez da orientacao /vincular",
+      "description": "Achado na sessao do TCC 2 de 2026-11-01, so por leitura de codigo (nao reproduzido em execucao), parte do epic-049 da raiz. Sem vinculo, o ServiceKeyAuthenticationFilter do api-gateway responde 404 (TelegramAccountNotFoundException, type .../telegram-account-not-found), como documentado em services/api-gateway/CLAUDE.md. Mas docs/services/telegram-integration.md (passo 6) e services/telegram-integration/CLAUDE.md tratam 401 como 'sem vinculo', e bets_client.py mapeia 401 -> NO_TELEGRAM_LINK e 404 -> CATALOG_ENTRY_NOT_FOUND. Na pratica o envio nem chega: a busca de catalogo (catalog_client.fetch_catalog, mesmos headers) recebe o 404 antes, retorna None, e orchestration.py responde generic_error. A mensagem bet_submit_no_link nunca aparece. Correcao provavel so neste servico: distinguir 'sem vinculo' pelo campo type do problem+json (telegram-account-not-found), tanto na busca de catalogo quanto no envio, sem mudar o contrato do api-gateway; decidir no Plan Reviewer. Definicao de pronto: usuario sem vinculo que manda aposta recebe bet_submit_no_link nos 3 locales, teste cobrindo catalogo e envio, docs/services/telegram-integration.md e CLAUDE.md deste servico com o status real, evidencia aqui e no epic-049.",
+      "dependencies": [],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
     }
   ]
 }
