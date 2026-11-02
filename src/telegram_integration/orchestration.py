@@ -105,7 +105,7 @@ def _advance_catalog(
         options = fetch_catalog(_CATALOG_RESOURCE[catalog_type], telegram_user_id, correlation_id)
         if options is None:
             save_pending(client, telegram_user_id, PendingBet(fields=fields, catalog_ids=catalog_ids))
-            error_message = get_message("generic_error", language_code)
+            error_message = get_message("generic_error_pending", language_code)
             return CaptureResult(status="blocked", message=error_message, bet=None)
 
         if not options:

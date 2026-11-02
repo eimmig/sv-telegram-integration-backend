@@ -36,9 +36,10 @@ def test_save_then_get_pending_round_trips(redis_client: redis.Redis) -> None:
 def test_clear_pending_removes_the_state(redis_client: redis.Redis) -> None:
     save_pending(redis_client, "user-2", PendingBet(fields={}, awaiting_field="odd"))
 
-    clear_pending(redis_client, "user-2")
+    assert clear_pending(redis_client, "user-2") is True
 
     assert get_pending(redis_client, "user-2") is None
+    assert clear_pending(redis_client, "user-2") is False
 
 
 def test_round_trips_catalog_ids_and_awaiting_catalog_question(redis_client: redis.Redis) -> None:

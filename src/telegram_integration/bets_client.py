@@ -17,6 +17,7 @@ class SubmitOutcome(Enum):
     NO_TELEGRAM_LINK = auto()
     CATALOG_ENTRY_NOT_FOUND = auto()
     VALIDATION_FAILED = auto()
+    REJECTED = auto()
     SERVICE_UNAVAILABLE = auto()
 
 
@@ -27,6 +28,7 @@ _STATUS_TO_OUTCOME = {
     404: SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
     422: SubmitOutcome.VALIDATION_FAILED,
 }
+_TRANSIENT_CLIENT_ERRORS = (408, 429)
 
 
 def _api_gateway_url() -> str:
@@ -66,9 +68,11 @@ def submit_bet(
         return SubmitOutcome.SERVICE_UNAVAILABLE
 
     outcome = _STATUS_TO_OUTCOME.get(response.status_code)
-    if outcome is None:
-        logger.warning(
-            "unexpected status %s submitting bet [correlationId=%s]", response.status_code, correlation_id
-        )
-        return SubmitOutcome.SERVICE_UNAVAILABLE
-    return outcome
+    if outcome is not None:
+        return outcome
+    logger.warning(
+        "unexpected status %s submitting bet [correlationId=%s]", response.status_code, correlation_id
+    )
+    if 400 <= response.status_code < 500 and response.status_code not in _TRANSIENT_CLIENT_ERRORS:
+        return SubmitOutcome.REJECTED
+    return SubmitOutcome.SERVICE_UNAVAILABLE

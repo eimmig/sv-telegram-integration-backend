@@ -498,11 +498,112 @@
       "name": "Opcao de recomecar o cadastro da aposta e descartar a conversa anterior",
       "description": "Achado em producao na sessao do TCC 2 de 2026-11-02. O envio de uma aposta voltou 400 do bets-service (log do telegram-integration: 'unexpected status 400 submitting bet [correlationId=6264fb0e-9881-4b61-bbce-8347147e2621]'). bets_client.py nao mapeia 400 (so 201/200/401/404/422), entao o resultado vira SERVICE_UNAVAILABLE, que fica fora de _SUBMIT_OUTCOMES_THAT_CLEAR_STATE em main.py. A conversa completa continua no Redis (telegram:pending-bet:<telegramUserId>, TTL de 15 min renovado a cada mensagem) e toda mensagem nova, inclusive uma foto de outro bilhete, reenvia a mesma aposta e recebe generic_error de novo. O usuario fica preso ate o TTL expirar sem mandar nada. Implementar um comando para recomecar (ex.: /cancelar ou /nova, nome a decidir no Plan Reviewer) que apaga o estado pendente e responde com uma mensagem localizada, tratado no n8n (desvio como o do /vincular) ou no servico Python, decidir no Plan Reviewer. Avaliar tambem: mostrar o comando na mensagem generic_error quando houver conversa pendente; descartar a conversa anterior quando chegar uma foto nova; nao manter o estado em erros que nao sao temporarios (4xx). A causa do 400 em si (campo do corpo que o bets-service rejeita) e outro item (feat-016). Definicao de pronto: o comando apaga telegram:pending-bet do usuario e confirma nos 3 locales; depois dele, a mensagem seguinte comeca um cadastro novo; testes cobrindo comando com e sem conversa pendente; fluxo n8n/telegram-bot.json atualizado se o desvio ficar no n8n; docs/services/telegram-integration.md e CLAUDE.md deste servico atualizados; evidencia aqui.",
       "dependencies": [],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
-      "evidence": ""
+      "status": "in-progress",
+      "plan_review": "2026-11-02, Plan Reviewer (review-suite:ln-11, passada propria - host nao permite subagente sem pedido do usuario, independencia reduzida declarada): READY WITH CONCERNS. Decisoes: comando /cancelar (alias /cancel; primeiro token, case-insensitive, aceita sufixo @bot e argumentos) tratado no Python em main.capture_bet antes do OCR, nao no n8n - o ramo de texto do n8n ja encaminha qualquer texto que nao comeca com '/vincular ' para /bets/capture, o Redis so e acessado pelo Python e o n8n nao tem credencial de Redis; sem mudanca no fluxo n8n, sem reimportacao. Resposta nova status 'cancelled' (Send reply do n8n so le chatId/message; so testes consomem status). Achados absorvidos: (1) MINOR - asserts de generic_error em tests/test_capture_endpoint.py:294 e tests/test_orchestration.py:210 passam a esperar generic_error_pending; generic_error continua no fluxo de vinculo. (2) MINOR - sobreposicao com feat-016: o novo SubmitOutcome.REJECTED ja limpa o estado no 400 (validacao de campo, permanente - docs/contratos-de-api.md); feat-016 so refina a mensagem; o caso 'foto sem texto aguardando campo' some porque a foto reinicia a conversa. (3) MINOR - 408/429 tratados como temporarios (SERVICE_UNAVAILABLE). Fora de escopo: /start e outros comandos caem na extracao (pre-existente); mensagem sem texto aguardando odd gera '' (feat-016).",
+      "jira": "SV-783",
+      "subtasks": [
+        {
+          "id": "feat-015.1",
+          "name": "Comando /cancelar apaga a conversa pendente",
+          "status": "done",
+          "jira": "SV-784",
+          "owner": "agente",
+          "detail": "Saida direta para o usuario preso: o comando apaga telegram:pending-bet e confirma nos 3 locales.",
+          "checklist": [
+            "main.capture_bet: texto cujo primeiro token e /cancelar ou /cancel (case-insensitive, com ou sem @bot) chama clear_pending antes do OCR/orquestracao.",
+            "Resposta status 'cancelled' com conversation_reset (havia conversa) ou conversation_reset_nothing_pending (nao havia).",
+            "Chaves novas nos 3 locales.",
+            "Testes: comando com e sem conversa pendente, variantes do comando, mensagem seguinte comeca cadastro novo, texto em 2 locales.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-015.2",
+          "name": "Dica do /cancelar no erro com estado preservado e foto nova reinicia a conversa",
+          "status": "done",
+          "jira": "SV-785",
+          "owner": "agente",
+          "detail": "Quando o bot guarda a conversa apos um erro, o usuario precisa saber que pode recomecar; uma foto de outro bilhete nao pode reenviar a aposta anterior.",
+          "checklist": [
+            "Chave generic_error_pending (cita /cancelar) nos 3 locales.",
+            "main: SERVICE_UNAVAILABLE no envio responde generic_error_pending.",
+            "orchestration._advance_catalog: falha de catalogo (estado salvo) responde generic_error_pending.",
+            "main.capture_bet: foto chama clear_pending antes de handle_message.",
+            "Testes atualizados e novos (foto com conversa pendente nao reenvia a aposta anterior).",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-015.3",
+          "name": "4xx permanente no envio limpa o estado (SubmitOutcome.REJECTED)",
+          "status": "done",
+          "jira": "SV-786",
+          "owner": "agente",
+          "detail": "Erro que nao e temporario nao deve manter a conversa e repetir a mesma falha a cada mensagem.",
+          "checklist": [
+            "bets_client: 4xx nao mapeado, exceto 408/429, vira SubmitOutcome.REJECTED; 5xx, 408, 429 e erro de rede continuam SERVICE_UNAVAILABLE.",
+            "main: REJECTED limpa o estado e responde bet_submit_rejected (3 locales).",
+            "Testes de mapeamento (400, 403, 408, 429, 500) e de limpeza do estado.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-015.4",
+          "name": "Docs, CHANGELOG e verificacao final",
+          "status": "done",
+          "jira": "SV-787",
+          "owner": "agente",
+          "detail": "Fechar a feature com documentacao e gates completos.",
+          "checklist": [
+            "CLAUDE.md do servico, n8n/README.md e ../../docs/services/telegram-integration.md (passo 6 + comando) atualizados.",
+            "./init.sh do servico e da raiz verdes.",
+            "Delivery Reviewer e Test Suite Auditor rodados.",
+            "Vault (docs/) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao docs/DECISIONS-LOG.md a menos que divirja do TCC 1) no mesmo commit.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "PR story->develop com CI + SonarCloud verdes."
+        }
+      ],
+      "evidence": {
+        "resumo": "Fechada em 2026-11-02. Comando /cancelar (alias /cancel) tratado no servico Python apaga telegram:pending-bet e confirma nos 3 locales; a mensagem seguinte comeca cadastro novo. Story SV-783, subtasks SV-784..787, PRs #56/#57/#58/#59 (subtask->story) e o PR da story (story->develop).",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "Decisao de design: comando /cancelar (alias /cancel; primeiro token, case-insensitive, aceita sufixo @bot e argumentos) no Python (main.capture_bet, antes do OCR), nao no n8n - o ramo de texto do n8n/telegram-bot.json ja encaminha qualquer texto que nao comeca com '/vincular ' para /bets/capture e so o Python acessa o Redis. Fluxo n8n inalterado, sem reimportacao.",
+              "Resposta conversation_reset (havia conversa) ou conversation_reset_nothing_pending (nao havia), status 'cancelled'; clear_pending passa a devolver bool.",
+              "generic_error_pending (cita /cancelar) quando o estado e preservado: SERVICE_UNAVAILABLE no envio e falha de catalogo. generic_error continua so no fluxo de vinculo.",
+              "Foto nova sempre comeca conversa nova (clear_pending antes do OCR) - antes os campos guardados prevaleciam e a aposta anterior era reenviada.",
+              "bets_client: 4xx nao mapeado (exceto 408/429) vira SubmitOutcome.REJECTED, limpa o estado e responde bet_submit_rejected; 5xx/408/429/rede continuam SERVICE_UNAVAILABLE com estado preservado. Era o caso do 400 de producao.",
+              "Docs: CLAUDE.md do servico, n8n/README.md e docs/services/telegram-integration.md (sv-harness, commit a61671e, passos 6/7/8)."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "./init.sh do servico: 117 testes, 0 falhas, cobertura 100% (gate 80%), ruff e mypy limpos.",
+              "Testes de endpoint com Redis real (testcontainers): comando com e sem conversa pendente, variantes, textos que nao sao o comando, foto com /cancelar, pt-BR/en/es, mensagem seguinte comeca cadastro novo sem reenviar, foto com conversa presa nao reenvia, rejeicao permanente limpa estado; mapeamento 400/403/409/408/429/500/503 em test_bets_client.",
+              "CI verde nos PRs #56..#59; CI + SonarCloud no PR story->develop.",
+              "Plan Reviewer: READY WITH CONCERNS (3 MINOR absorvidos). Delivery Reviewer: PASS, sem P0-P2. Test Suite Auditor: PASS apos 1 P3 corrigido (estado compartilhado entre casos parametrizados causava falha em cascata, visto por mutacao dirigida). Mutacoes dirigidas (sem clear na foto, sem REJECTED na limpeza, sem tratamento de @bot) derrubam o teste correspondente. Reviewers rodados em passada propria, sem subagente (host nao permite sem pedido do usuario)."
+            ]
+          },
+          {
+            "titulo": "Divergencias e pendencias",
+            "itens": [
+              "Definicao de pronto pedia atualizar o fluxo n8n so se o desvio ficasse no n8n - ficou no Python, entao nao houve mudanca.",
+              "Causa do 400 (odd vazia: parse_direct_answer devolve texto cru quando nao acha numero) registrada como feat-016; com esta feature o 400 ja limpa o estado, feat-016 so troca a mensagem para bet_submit_validation_failed e impede o envio. O caso 'foto sem texto aguardando campo' da feat-016 deixa de existir porque a foto reinicia a conversa.",
+              "Usuario sem vinculo continua recebendo generic_error_pending na busca de catalogo (404 do api-gateway) - feat-014.",
+              "Manual em producao: rollout restart do telegram-integration depois que a imagem :latest for publicada (deploy automatico falha). Opcional: /setcommands no BotFather com /cancelar e /vincular.",
+              "Sem epic na raiz para esta feature (nao criado)."
+            ]
+          }
+        ]
+      },
+      "goal": "Dar ao usuario do bot uma saida para uma conversa presa: o comando /cancelar apaga o estado pendente no Redis e a mensagem seguinte comeca um cadastro novo.",
+      "scope": "Comando /cancelar (alias /cancel) tratado no servico Python; mensagem de erro com dica do comando quando o estado e preservado; foto nova sempre comeca conversa nova; 4xx permanente no envio limpa o estado. Fluxo n8n inalterado (o ramo de texto ja encaminha o comando). Causa do 400 fica na feat-016."
     },
     {
       "id": "feat-016",

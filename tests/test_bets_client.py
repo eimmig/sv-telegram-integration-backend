@@ -47,7 +47,13 @@ def _mock_client(status_code: int) -> httpx.Client:
         (401, SubmitOutcome.NO_TELEGRAM_LINK),
         (404, SubmitOutcome.CATALOG_ENTRY_NOT_FOUND),
         (422, SubmitOutcome.VALIDATION_FAILED),
+        (400, SubmitOutcome.REJECTED),
+        (403, SubmitOutcome.REJECTED),
+        (409, SubmitOutcome.REJECTED),
+        (408, SubmitOutcome.SERVICE_UNAVAILABLE),
+        (429, SubmitOutcome.SERVICE_UNAVAILABLE),
         (500, SubmitOutcome.SERVICE_UNAVAILABLE),
+        (503, SubmitOutcome.SERVICE_UNAVAILABLE),
     ],
 )
 def test_maps_bets_service_status_to_outcome(
