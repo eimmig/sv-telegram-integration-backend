@@ -45,6 +45,7 @@ _SUBMIT_OUTCOME_MESSAGE_KEY = {
     SubmitOutcome.NO_TELEGRAM_LINK: "bet_submit_no_link",
     SubmitOutcome.CATALOG_ENTRY_NOT_FOUND: "bet_submit_catalog_not_found",
     SubmitOutcome.VALIDATION_FAILED: "bet_submit_validation_failed",
+    SubmitOutcome.REJECTED: "bet_submit_rejected",
     SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error_pending",
 }
 _SUBMIT_SUCCESS_OUTCOMES = (SubmitOutcome.CREATED, SubmitOutcome.ALREADY_SUBMITTED)
@@ -52,6 +53,7 @@ _SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
     *_SUBMIT_SUCCESS_OUTCOMES,
     SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
     SubmitOutcome.VALIDATION_FAILED,
+    SubmitOutcome.REJECTED,
 )
 
 _RESET_COMMANDS = ("/cancelar", "/cancel")

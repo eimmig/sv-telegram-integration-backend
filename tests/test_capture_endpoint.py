@@ -590,3 +590,24 @@ def test_new_photo_discards_the_previous_conversation_instead_of_resending_it(
     assert pending is not None
     assert pending.fields["odd"] == "2.10"
     assert pending.catalog_ids == {}
+
+
+def test_permanent_rejection_clears_the_conversation(
+    client: TestClient, redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    monkeypatch.setattr("telegram_integration.main.submit_bet", lambda *_a, **_kw: SubmitOutcome.REJECTED)
+
+    body = _reach_complete(client, "rejected-user", "chat-rejected")
+
+    assert body["status"] == "blocked"
+    assert body["bet"] is None
+    assert body["message"] == (
+        "Não foi possível registrar essa aposta e os dados foram descartados. "
+        "Envie a foto do bilhete ou os dados da aposta novamente."
+    )
+    assert get_pending(redis_client, "rejected-user") is None
+
+    retry = _post_text(client, "rejected-user", "qualquer coisa")
+    assert retry["status"] == "pending"
+    assert retry["message"] == "Qual foi a odd dessa aposta?"

@@ -22,5 +22,6 @@
   "bet_submit_validation_failed": "Os valores informados não são válidos para essa aposta (confira a odd e o valor apostado). Envie os dados da aposta novamente.",
   "conversation_reset": "Cadastro cancelado. Os dados da aposta anterior foram descartados. Envie a foto do bilhete ou os dados da nova aposta.",
   "conversation_reset_nothing_pending": "Não havia nenhum cadastro em andamento. Envie a foto do bilhete ou os dados da aposta para começar.",
-  "generic_error_pending": "Ocorreu um erro ao registrar a aposta. Os dados foram guardados: envie qualquer mensagem para tentar de novo ou /cancelar para recomeçar o cadastro."
+  "generic_error_pending": "Ocorreu um erro ao registrar a aposta. Os dados foram guardados: envie qualquer mensagem para tentar de novo ou /cancelar para recomeçar o cadastro.",
+  "bet_submit_rejected": "Não foi possível registrar essa aposta e os dados foram descartados. Envie a foto do bilhete ou os dados da aposta novamente."
 }
