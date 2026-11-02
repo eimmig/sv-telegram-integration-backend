@@ -553,7 +553,7 @@
         {
           "id": "feat-015.4",
           "name": "Docs, CHANGELOG e verificacao final",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-787",
           "owner": "agente",
           "detail": "Fechar a feature com documentacao e gates completos.",
@@ -567,7 +567,41 @@
           "validation": "PR story->develop com CI + SonarCloud verdes."
         }
       ],
-      "evidence": "",
+      "evidence": {
+        "resumo": "Fechada em 2026-11-02. Comando /cancelar (alias /cancel) tratado no servico Python apaga telegram:pending-bet e confirma nos 3 locales; a mensagem seguinte comeca cadastro novo. Story SV-783, subtasks SV-784..787, PRs #56/#57/#58/#59 (subtask->story) e o PR da story (story->develop).",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "Decisao de design: comando /cancelar (alias /cancel; primeiro token, case-insensitive, aceita sufixo @bot e argumentos) no Python (main.capture_bet, antes do OCR), nao no n8n - o ramo de texto do n8n/telegram-bot.json ja encaminha qualquer texto que nao comeca com '/vincular ' para /bets/capture e so o Python acessa o Redis. Fluxo n8n inalterado, sem reimportacao.",
+              "Resposta conversation_reset (havia conversa) ou conversation_reset_nothing_pending (nao havia), status 'cancelled'; clear_pending passa a devolver bool.",
+              "generic_error_pending (cita /cancelar) quando o estado e preservado: SERVICE_UNAVAILABLE no envio e falha de catalogo. generic_error continua so no fluxo de vinculo.",
+              "Foto nova sempre comeca conversa nova (clear_pending antes do OCR) - antes os campos guardados prevaleciam e a aposta anterior era reenviada.",
+              "bets_client: 4xx nao mapeado (exceto 408/429) vira SubmitOutcome.REJECTED, limpa o estado e responde bet_submit_rejected; 5xx/408/429/rede continuam SERVICE_UNAVAILABLE com estado preservado. Era o caso do 400 de producao.",
+              "Docs: CLAUDE.md do servico, n8n/README.md e docs/services/telegram-integration.md (sv-harness, commit a61671e, passos 6/7/8)."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "./init.sh do servico: 117 testes, 0 falhas, cobertura 100% (gate 80%), ruff e mypy limpos.",
+              "Testes de endpoint com Redis real (testcontainers): comando com e sem conversa pendente, variantes, textos que nao sao o comando, foto com /cancelar, pt-BR/en/es, mensagem seguinte comeca cadastro novo sem reenviar, foto com conversa presa nao reenvia, rejeicao permanente limpa estado; mapeamento 400/403/409/408/429/500/503 em test_bets_client.",
+              "CI verde nos PRs #56..#59; CI + SonarCloud no PR story->develop.",
+              "Plan Reviewer: READY WITH CONCERNS (3 MINOR absorvidos). Delivery Reviewer: PASS, sem P0-P2. Test Suite Auditor: PASS apos 1 P3 corrigido (estado compartilhado entre casos parametrizados causava falha em cascata, visto por mutacao dirigida). Mutacoes dirigidas (sem clear na foto, sem REJECTED na limpeza, sem tratamento de @bot) derrubam o teste correspondente. Reviewers rodados em passada propria, sem subagente (host nao permite sem pedido do usuario)."
+            ]
+          },
+          {
+            "titulo": "Divergencias e pendencias",
+            "itens": [
+              "Definicao de pronto pedia atualizar o fluxo n8n so se o desvio ficasse no n8n - ficou no Python, entao nao houve mudanca.",
+              "Causa do 400 (odd vazia: parse_direct_answer devolve texto cru quando nao acha numero) registrada como feat-016; com esta feature o 400 ja limpa o estado, feat-016 so troca a mensagem para bet_submit_validation_failed e impede o envio. O caso 'foto sem texto aguardando campo' da feat-016 deixa de existir porque a foto reinicia a conversa.",
+              "Usuario sem vinculo continua recebendo generic_error_pending na busca de catalogo (404 do api-gateway) - feat-014.",
+              "Manual em producao: rollout restart do telegram-integration depois que a imagem :latest for publicada (deploy automatico falha). Opcional: /setcommands no BotFather com /cancelar e /vincular.",
+              "Sem epic na raiz para esta feature (nao criado)."
+            ]
+          }
+        ]
+      },
       "goal": "Dar ao usuario do bot uma saida para uma conversa presa: o comando /cancelar apaga o estado pendente no Redis e a mensagem seguinte comeca um cadastro novo.",
       "scope": "Comando /cancelar (alias /cancel) tratado no servico Python; mensagem de erro com dica do comando quando o estado e preservado; foto nova sempre comeca conversa nova; 4xx permanente no envio limpa o estado. Fluxo n8n inalterado (o ramo de texto ja encaminha o comando). Causa do 400 fica na feat-016."
     },
