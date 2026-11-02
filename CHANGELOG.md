@@ -7,6 +7,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-02
+
 - [SV-783](https://stakevault.atlassian.net/browse/SV-783) - Opcao de recomecar o cadastro da aposta e descartar a conversa anterior
 - [SV-784](https://stakevault.atlassian.net/browse/SV-784) - Comando /cancelar apaga a conversa pendente
 - [SV-785](https://stakevault.atlassian.net/browse/SV-785) - Dica do /cancelar no erro com estado preservado e foto nova reinicia a conversa
