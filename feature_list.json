@@ -492,6 +492,28 @@
       "jira": "",
       "subtasks": [],
       "evidence": ""
+    },
+    {
+      "id": "feat-015",
+      "name": "Opcao de recomecar o cadastro da aposta e descartar a conversa anterior",
+      "description": "Achado em producao na sessao do TCC 2 de 2026-11-02. O envio de uma aposta voltou 400 do bets-service (log do telegram-integration: 'unexpected status 400 submitting bet [correlationId=6264fb0e-9881-4b61-bbce-8347147e2621]'). bets_client.py nao mapeia 400 (so 201/200/401/404/422), entao o resultado vira SERVICE_UNAVAILABLE, que fica fora de _SUBMIT_OUTCOMES_THAT_CLEAR_STATE em main.py. A conversa completa continua no Redis (telegram:pending-bet:<telegramUserId>, TTL de 15 min renovado a cada mensagem) e toda mensagem nova, inclusive uma foto de outro bilhete, reenvia a mesma aposta e recebe generic_error de novo. O usuario fica preso ate o TTL expirar sem mandar nada. Implementar um comando para recomecar (ex.: /cancelar ou /nova, nome a decidir no Plan Reviewer) que apaga o estado pendente e responde com uma mensagem localizada, tratado no n8n (desvio como o do /vincular) ou no servico Python, decidir no Plan Reviewer. Avaliar tambem: mostrar o comando na mensagem generic_error quando houver conversa pendente; descartar a conversa anterior quando chegar uma foto nova; nao manter o estado em erros que nao sao temporarios (4xx). A causa do 400 em si (campo do corpo que o bets-service rejeita) e outro item (feat-016). Definicao de pronto: o comando apaga telegram:pending-bet do usuario e confirma nos 3 locales; depois dele, a mensagem seguinte comeca um cadastro novo; testes cobrindo comando com e sem conversa pendente; fluxo n8n/telegram-bot.json atualizado se o desvio ficar no n8n; docs/services/telegram-integration.md e CLAUDE.md deste servico atualizados; evidencia aqui.",
+      "dependencies": [],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-016",
+      "name": "Odd ou stake vazia/nao numerica chega ao envio e o bets-service responde 400",
+      "description": "Causa do 400 que originou a feat-015, achada em producao na sessao do TCC 2 de 2026-11-02 (correlationId 6264fb0e-9881-4b61-bbce-8347147e2621). Estado salvo no Redis: {\"fields\": {\"odd\": \"\", \"stake\": \"32.50\", \"bet_date\": \"2026-11-02\", ...}, \"awaiting_field\": null, \"catalog_ids\": {4 ids preenchidos}}. A odd ficou como string vazia. extraction.parse_direct_answer devolve o texto cru quando nao acha numero (inclusive vazio, ex.: foto ou mensagem sem texto enquanto o bot aguardava a odd), e orchestration.handle_message so considera faltando o campo com fields.get(name) is None, entao \"\" passa, o fluxo segue para os catalogos e envia \"odd\": \"\", que o bets-service rejeita com 400 (validacao do corpo). bets_client.py nao mapeia 400 e o resultado vira SERVICE_UNAVAILABLE (generic_error, estado preservado). Correcao provavel so neste servico: tratar valor vazio ou nao numerico de odd/stake como faltando e perguntar de novo (com mensagem localizada de valor invalido), validar o formato antes de enviar (odd > 1, stake > 0, sem duplicar RN02/RN03/RN06/RN07, que continuam no bets-service) e mapear 400 de validacao para bet_submit_validation_failed (limpa o estado). Decidir no Plan Reviewer. Definicao de pronto: resposta vazia ou nao numerica a pergunta de odd/stake repete a pergunta nos 3 locales e nunca e enviada; 400 do api-gateway vira bet_submit_validation_failed e limpa telegram:pending-bet; testes cobrindo resposta vazia, texto sem numero, foto sem texto enquanto aguarda campo e o mapeamento do 400; docs/services/telegram-integration.md (passo 6) atualizado; evidencia aqui.",
+      "dependencies": [],
+      "status": "not-started",
+      "plan_review": "",
+      "jira": "",
+      "subtasks": [],
+      "evidence": ""
     }
   ]
 }
