@@ -11,6 +11,7 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-784](https://stakevault.atlassian.net/browse/SV-784) - Comando /cancelar apaga a conversa pendente
 - [SV-785](https://stakevault.atlassian.net/browse/SV-785) - Dica do /cancelar no erro com estado preservado e foto nova reinicia a conversa
 - [SV-786](https://stakevault.atlassian.net/browse/SV-786) - 4xx permanente no envio limpa o estado (SubmitOutcome.REJECTED)
+- [SV-787](https://stakevault.atlassian.net/browse/SV-787) - Docs, CHANGELOG e verificacao final
 
 ## [0.1.2] - 2026-09-30
 
