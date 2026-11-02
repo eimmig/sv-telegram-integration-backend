@@ -485,3 +485,22 @@ raiz (7 sub-harnesses OK) verdes. Nenhuma descoberta nova que exigisse nota de v
 puramente textual. Fecha a parte de `telegram-integration` do `epic-032` da raiz — próximo
 harness na ordem sugerida: serviços Java (`auth-service`/`bets-service`/`stats-service`/
 `api-gateway`) + `infra/`.
+
+## `feat-015` fechada — comando `/cancelar` para recomeçar o cadastro (2026-11-02)
+
+Achado em produção: um `POST /api/v1/bets` voltou `400`, `bets_client.py` tratou como
+indisponibilidade (`SERVICE_UNAVAILABLE`), o estado ficou em `telegram:pending-bet:<id>` e toda
+mensagem nova, inclusive foto de outro bilhete, reenviava a mesma aposta até o TTL expirar.
+
+Decisão do Plan Reviewer (READY WITH CONCERNS): `/cancelar` (alias `/cancel`, com ou sem `@bot`)
+tratado no Python em `main.capture_bet`, não no n8n. O ramo de texto do `n8n/telegram-bot.json`
+já encaminha o comando para `/bets/capture` e só o Python acessa o Redis, então o fluxo n8n
+**não mudou**. Junto: `generic_error_pending` (cita `/cancelar`) quando o estado é preservado; foto
+nova sempre começa conversa nova; `4xx` permanente (exceto `408`/`429`) vira
+`SubmitOutcome.REJECTED` e limpa o estado.
+
+Story SV-783, subtasks SV-784..787, PRs #56..#59 (subtask->story) + #60 (story->develop, CI +
+SonarCloud verdes). 117 testes, cobertura 100%. Delivery Reviewer PASS; Test Suite Auditor PASS
+após corrigir estado compartilhado entre casos parametrizados (visto por mutação dirigida).
+Causa do `400` (odd vazia vinda de `parse_direct_answer`) registrada como `feat-016`.
+Pendente em produção: `kubectl rollout restart` do telegram-integration (deploy automático falha).
