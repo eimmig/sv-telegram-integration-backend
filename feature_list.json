@@ -505,7 +505,7 @@
         {
           "id": "feat-015.1",
           "name": "Comando /cancelar apaga a conversa pendente",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-784",
           "owner": "agente",
           "detail": "Saida direta para o usuario preso: o comando apaga telegram:pending-bet e confirma nos 3 locales.",
@@ -521,7 +521,7 @@
         {
           "id": "feat-015.2",
           "name": "Dica do /cancelar no erro com estado preservado e foto nova reinicia a conversa",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-785",
           "owner": "agente",
           "detail": "Quando o bot guarda a conversa apos um erro, o usuario precisa saber que pode recomecar; uma foto de outro bilhete nao pode reenviar a aposta anterior.",
