@@ -45,7 +45,7 @@ _SUBMIT_OUTCOME_MESSAGE_KEY = {
     SubmitOutcome.NO_TELEGRAM_LINK: "bet_submit_no_link",
     SubmitOutcome.CATALOG_ENTRY_NOT_FOUND: "bet_submit_catalog_not_found",
     SubmitOutcome.VALIDATION_FAILED: "bet_submit_validation_failed",
-    SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error",
+    SubmitOutcome.SERVICE_UNAVAILABLE: "generic_error_pending",
 }
 _SUBMIT_SUCCESS_OUTCOMES = (SubmitOutcome.CREATED, SubmitOutcome.ALREADY_SUBMITTED)
 _SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
@@ -134,6 +134,7 @@ def capture_bet(
         return _reset_conversation(client, payload.telegram_user_id, payload.language_code, payload.chat_id)
 
     if payload.photo_base64:
+        clear_pending(client, payload.telegram_user_id)
         text = extract_text(base64.b64decode(payload.photo_base64))
     else:
         text = payload.text or ""
