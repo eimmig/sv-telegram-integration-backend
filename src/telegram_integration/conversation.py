@@ -75,5 +75,5 @@ def save_pending(client: redis.Redis, telegram_user_id: str, pending: PendingBet
     client.set(_KEY_PREFIX + telegram_user_id, payload, ex=PENDING_TTL_SECONDS)
 
 
-def clear_pending(client: redis.Redis, telegram_user_id: str) -> None:
-    client.delete(_KEY_PREFIX + telegram_user_id)
+def clear_pending(client: redis.Redis, telegram_user_id: str) -> bool:
+    return bool(client.delete(_KEY_PREFIX + telegram_user_id))
