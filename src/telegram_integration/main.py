@@ -30,6 +30,7 @@ def require_service_key(x_service_key: Annotated[str | None, Header()] = None) -
             status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or missing X-Service-Key"
         )
 
+
 _LINK_OUTCOME_MESSAGE_KEY = {
     LinkOutcome.SUCCESS: "link_success",
     LinkOutcome.CODE_NOT_FOUND: "link_code_invalid",
@@ -52,6 +53,8 @@ _SUBMIT_OUTCOMES_THAT_CLEAR_STATE = (
     SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
     SubmitOutcome.VALIDATION_FAILED,
 )
+
+_RESET_COMMANDS = ("/cancelar", "/cancel")
 
 _redis_client: redis.Redis | None = None
 
@@ -77,7 +80,7 @@ class NormalizedMessage(BaseModel):
 class CaptureResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    status: Literal["pending", "complete", "blocked"]
+    status: Literal["pending", "complete", "blocked", "cancelled"]
     message: str
     chat_id: str = Field(alias="chatId")
     bet: dict[str, str | None] | None = None
@@ -99,6 +102,24 @@ class LinkAccountResponse(BaseModel):
     chat_id: str = Field(alias="chatId")
 
 
+def _is_reset_command(text: str | None) -> bool:
+    tokens = (text or "").split()
+    if not tokens:
+        return False
+    command = tokens[0].split("@", 1)[0].lower()
+    return command in _RESET_COMMANDS
+
+
+def _reset_conversation(
+    client: redis.Redis, telegram_user_id: str, language_code: str | None, chat_id: str
+) -> CaptureResponse:
+    had_pending = clear_pending(client, telegram_user_id)
+    message_key = "conversation_reset" if had_pending else "conversation_reset_nothing_pending"
+    return CaptureResponse(
+        status="cancelled", message=get_message(message_key, language_code), chatId=chat_id
+    )
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -109,6 +130,9 @@ def capture_bet(
     payload: NormalizedMessage,
     client: Annotated[redis.Redis, Depends(get_redis_client)],
 ) -> CaptureResponse:
+    if not payload.photo_base64 and _is_reset_command(payload.text):
+        return _reset_conversation(client, payload.telegram_user_id, payload.language_code, payload.chat_id)
+
     if payload.photo_base64:
         text = extract_text(base64.b64decode(payload.photo_base64))
     else:

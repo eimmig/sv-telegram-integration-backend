@@ -409,3 +409,132 @@ def test_idempotency_key_falls_back_when_telegram_update_id_is_missing(
     assert len(captured_keys) == 1
     assert captured_keys[0]
     assert ":" not in captured_keys[0]
+
+
+def _post_text(
+    client: TestClient, telegram_user_id: str, text: str, language_code: str = "pt-BR"
+) -> dict[str, object]:
+    response = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": telegram_user_id,
+            "languageCode": language_code,
+            "chatId": f"chat-{telegram_user_id}",
+            "text": text,
+        },
+    )
+    assert response.status_code == 200
+    return response.json()  # type: ignore[no-any-return]
+
+
+def test_reset_command_discards_a_stuck_conversation_and_next_message_starts_over(
+    client: TestClient, redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    submitted: list[dict[str, str]] = []
+
+    def _failing_submit(bet: dict[str, str], *_args: object) -> SubmitOutcome:
+        submitted.append(bet)
+        return SubmitOutcome.SERVICE_UNAVAILABLE
+
+    monkeypatch.setattr("telegram_integration.main.submit_bet", _failing_submit)
+    assert _reach_complete(client, "reset-user-1", "chat-reset-user-1")["status"] == "blocked"
+    assert redis_client.exists("telegram:pending-bet:reset-user-1")
+
+    body = _post_text(client, "reset-user-1", "/cancelar")
+
+    assert body["status"] == "cancelled"
+    assert body["message"] == (
+        "Cadastro cancelado. Os dados da aposta anterior foram descartados. "
+        "Envie a foto do bilhete ou os dados da nova aposta."
+    )
+    assert body["chatId"] == "chat-reset-user-1"
+    assert body["bet"] is None
+    assert not redis_client.exists("telegram:pending-bet:reset-user-1")
+
+    attempts_before = len(submitted)
+    next_message = _post_text(client, "reset-user-1", "sem nada reconhecivel")
+    assert next_message["status"] == "pending"
+    assert next_message["message"] == "Qual foi a odd dessa aposta?"
+    assert len(submitted) == attempts_before
+
+
+def test_reset_command_without_pending_conversation(client: TestClient, redis_client: redis.Redis) -> None:
+    body = _post_text(client, "reset-user-2", "/cancelar")
+
+    assert body["status"] == "cancelled"
+    assert body["message"] == (
+        "Não havia nenhum cadastro em andamento. Envie a foto do bilhete ou os dados da aposta para começar."
+    )
+    assert not redis_client.exists("telegram:pending-bet:reset-user-2")
+
+
+@pytest.mark.parametrize(
+    ("language_code", "expected"),
+    [
+        (
+            "en",
+            "Bet capture cancelled. The previous bet details were discarded. "
+            "Send the bet slip photo or the details of the new bet.",
+        ),
+        (
+            "es",
+            "Registro cancelado. Los datos de la apuesta anterior fueron descartados. "
+            "Envía la foto del boleto o los datos de la nueva apuesta.",
+        ),
+    ],
+)
+def test_reset_confirmation_follows_language_code(
+    client: TestClient, language_code: str, expected: str
+) -> None:
+    user = f"reset-user-locale-{language_code}"
+    assert _post_text(client, user, "odd 1.85", language_code)["status"] == "pending"
+
+    body = _post_text(client, user, "/cancelar", language_code)
+
+    assert body["message"] == expected
+
+
+@pytest.mark.parametrize(
+    "command", ["/cancel", "/CANCELAR", "  /cancelar  ", "/cancelar@ArkaBot", "/cancelar agora"]
+)
+def test_reset_command_variants_are_recognized(
+    client: TestClient, redis_client: redis.Redis, command: str
+) -> None:
+    user = "reset-user-variant"
+    assert _post_text(client, user, "odd 1.85")["status"] == "pending"
+
+    body = _post_text(client, user, command)
+
+    assert body["status"] == "cancelled"
+    assert not redis_client.exists(f"telegram:pending-bet:{user}")
+
+
+@pytest.mark.parametrize("text", ["", "   ", "cancelar", "/cancelamento", "odd 1.85 /cancelar"])
+def test_text_that_is_not_the_reset_command_keeps_the_conversation(
+    client: TestClient, redis_client: redis.Redis, text: str
+) -> None:
+    user = "reset-user-not-command"
+    redis_client.delete(f"telegram:pending-bet:{user}")
+
+    body = _post_text(client, user, text)
+
+    assert body["status"] == "pending"
+    assert redis_client.exists(f"telegram:pending-bet:{user}")
+
+
+def test_photo_is_never_treated_as_reset_command(client: TestClient, redis_client: redis.Redis) -> None:
+    user = "reset-user-photo"
+    response = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": user,
+            "languageCode": "pt-BR",
+            "chatId": "chat-photo",
+            "text": "/cancelar",
+            "photoBase64": _render_text_image("ODD 1.85"),
+        },
+    )
+
+    assert response.json()["status"] == "pending"
+    assert redis_client.exists(f"telegram:pending-bet:{user}")
