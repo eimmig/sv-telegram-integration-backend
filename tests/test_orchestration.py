@@ -207,7 +207,10 @@ def test_unreachable_catalog_blocks_but_preserves_progress(
     result = handle_message(redis_client, "user-k", "pt-BR", "Bet365, odd 1.85, valor R$ 50,00", "corr-1")
 
     assert result.status == "blocked"
-    assert result.message == "Ocorreu um erro. Tente novamente mais tarde."
+    assert result.message == (
+        "Ocorreu um erro ao registrar a aposta. Os dados foram guardados: "
+        "envie qualquer mensagem para tentar de novo ou /cancelar para recomeçar o cadastro."
+    )
     pending = get_pending(redis_client, "user-k")
     assert pending is not None
     assert pending.catalog_ids == {"bettingHouseId": "bh-1"}

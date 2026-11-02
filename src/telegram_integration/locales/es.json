@@ -21,5 +21,6 @@
   "bet_submit_catalog_not_found": "Una de las opciones elegidas ya no existe. Envía los datos de la apuesta de nuevo.",
   "bet_submit_validation_failed": "Los valores indicados no son válidos para esta apuesta (revisa la cuota y el monto apostado). Envía los datos de la apuesta de nuevo.",
   "conversation_reset": "Registro cancelado. Los datos de la apuesta anterior fueron descartados. Envía la foto del boleto o los datos de la nueva apuesta.",
-  "conversation_reset_nothing_pending": "No había ningún registro en curso. Envía la foto del boleto o los datos de la apuesta para empezar."
+  "conversation_reset_nothing_pending": "No había ningún registro en curso. Envía la foto del boleto o los datos de la apuesta para empezar.",
+  "generic_error_pending": "Ocurrió un error al registrar la apuesta. Los datos se guardaron: envía cualquier mensaje para intentarlo de nuevo o /cancelar para empezar el registro de nuevo."
 }

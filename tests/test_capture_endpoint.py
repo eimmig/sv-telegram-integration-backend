@@ -12,6 +12,7 @@ from testcontainers.community.redis import RedisContainer
 
 from telegram_integration.bets_client import SubmitOutcome
 from telegram_integration.catalog_client import CatalogEntry
+from telegram_integration.conversation import get_pending
 from telegram_integration.main import app, get_redis_client
 
 _STUB_CATALOG = {
@@ -291,7 +292,10 @@ def test_blocked_when_gateway_unreachable_during_submission(
     body = _reach_complete(client, "endpoint-user-8", "chat-8")
 
     assert body["status"] == "blocked"
-    assert body["message"] == "Ocorreu um erro. Tente novamente mais tarde."
+    assert body["message"] == (
+        "Ocorreu um erro ao registrar a aposta. Os dados foram guardados: "
+        "envie qualquer mensagem para tentar de novo ou /cancelar para recomeçar o cadastro."
+    )
 
 
 def test_blocked_when_a_resolved_catalog_entry_no_longer_exists(
@@ -538,3 +542,51 @@ def test_photo_is_never_treated_as_reset_command(client: TestClient, redis_clien
 
     assert response.json()["status"] == "pending"
     assert redis_client.exists(f"telegram:pending-bet:{user}")
+
+
+def test_generic_error_with_preserved_state_follows_language_code(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", lambda *_a: None)
+
+    body = _post_text(client, "pending-error-en", "Bet365, odd 1.85, valor R$ 50,00", "en")
+
+    assert body["status"] == "blocked"
+    assert body["message"] == (
+        "Something went wrong while capturing the bet. The details were kept: "
+        "send any message to try again or /cancelar to start over."
+    )
+
+
+def test_new_photo_discards_the_previous_conversation_instead_of_resending_it(
+    client: TestClient, redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    submitted: list[dict[str, str]] = []
+
+    def _failing_submit(bet: dict[str, str], *_args: object) -> SubmitOutcome:
+        submitted.append(bet)
+        return SubmitOutcome.SERVICE_UNAVAILABLE
+
+    monkeypatch.setattr("telegram_integration.main.submit_bet", _failing_submit)
+    assert _reach_complete(client, "photo-reset-user", "chat-photo-reset")["status"] == "blocked"
+    attempts_before = len(submitted)
+
+    response = client.post(
+        "/bets/capture",
+        json={
+            "telegramUserId": "photo-reset-user",
+            "languageCode": "pt-BR",
+            "chatId": "chat-photo-reset",
+            "photoBase64": _render_text_image("ODD 2.10"),
+        },
+    )
+
+    body = response.json()
+    assert body["status"] == "pending"
+    assert body["message"] == "Quanto você apostou (valor em R$)?"
+    assert len(submitted) == attempts_before
+    pending = get_pending(redis_client, "photo-reset-user")
+    assert pending is not None
+    assert pending.fields["odd"] == "2.10"
+    assert pending.catalog_ids == {}

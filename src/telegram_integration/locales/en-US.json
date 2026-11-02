@@ -21,5 +21,6 @@
   "bet_submit_catalog_not_found": "One of the chosen options no longer exists. Please send the bet details again.",
   "bet_submit_validation_failed": "The values provided aren't valid for this bet (check the odd and stake). Please send the bet details again.",
   "conversation_reset": "Bet capture cancelled. The previous bet details were discarded. Send the bet slip photo or the details of the new bet.",
-  "conversation_reset_nothing_pending": "There was no bet capture in progress. Send the bet slip photo or the bet details to start."
+  "conversation_reset_nothing_pending": "There was no bet capture in progress. Send the bet slip photo or the bet details to start.",
+  "generic_error_pending": "Something went wrong while capturing the bet. The details were kept: send any message to try again or /cancelar to start over."
 }
