@@ -538,7 +538,7 @@
         {
           "id": "feat-015.3",
           "name": "4xx permanente no envio limpa o estado (SubmitOutcome.REJECTED)",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-786",
           "owner": "agente",
           "detail": "Erro que nao e temporario nao deve manter a conversa e repetir a mesma falha a cada mensagem.",
@@ -553,7 +553,7 @@
         {
           "id": "feat-015.4",
           "name": "Docs, CHANGELOG e verificacao final",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-787",
           "owner": "agente",
           "detail": "Fechar a feature com documentacao e gates completos.",
