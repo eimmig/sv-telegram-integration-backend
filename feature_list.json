@@ -521,7 +521,7 @@
         {
           "id": "feat-015.2",
           "name": "Dica do /cancelar no erro com estado preservado e foto nova reinicia a conversa",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-785",
           "owner": "agente",
           "detail": "Quando o bot guarda a conversa apos um erro, o usuario precisa saber que pode recomecar; uma foto de outro bilhete nao pode reenviar a aposta anterior.",
@@ -538,7 +538,7 @@
         {
           "id": "feat-015.3",
           "name": "4xx permanente no envio limpa o estado (SubmitOutcome.REJECTED)",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-786",
           "owner": "agente",
           "detail": "Erro que nao e temporario nao deve manter a conversa e repetir a mesma falha a cada mensagem.",
