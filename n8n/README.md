@@ -31,6 +31,12 @@ Telegram, ramifica entre vínculo de conta, foto e texto, e chama o serviço Pyt
    captura) — todo endpoint Python sempre devolve `chatId`/`message`, então este nó não precisa
    referenciar nó nenhum anterior, seja qual for o ramo percorrido.
 
+**`/cancelar` (`feat-015`)** não tem desvio próprio: como não começa com `/vincular `, segue pelo
+ramo de texto até **Capture bet (Python)**, e o serviço Python reconhece o comando, apaga a
+conversa pendente no Redis e devolve a confirmação no mesmo formato `{message, chatId}`. Nenhuma
+mudança neste JSON, nenhuma reimportação. Opcional, manual: registrar `/cancelar` e `/vincular`
+no menu do bot pelo BotFather (`/setcommands`).
+
 ## Escopo (feat-002/feat-003/feat-004) vs próximos passos
 
 Este workflow chama o serviço Python de verdade e (`feat-004`) o Python agora resolve o catálogo

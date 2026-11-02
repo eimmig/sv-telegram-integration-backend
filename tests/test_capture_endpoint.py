@@ -506,6 +506,7 @@ def test_reset_command_variants_are_recognized(
     client: TestClient, redis_client: redis.Redis, command: str
 ) -> None:
     user = "reset-user-variant"
+    redis_client.delete(f"telegram:pending-bet:{user}")
     assert _post_text(client, user, "odd 1.85")["status"] == "pending"
 
     body = _post_text(client, user, command)

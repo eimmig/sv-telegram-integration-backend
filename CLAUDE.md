@@ -38,6 +38,13 @@ decididos em `../../docs/CONVENTIONS.md`, `../../docs/TESTING.md` e
   > `telegramUserId -> userId`/`tenantId` em `auth-service` consulta um diretório `TELEGRAM_LINK`
   > no schema `public` (fora de qualquer schema de tenant) — resolve direto, sem o bot precisar
   > informar o slug do tenant.
+- **Estado da conversa** (`telegram:pending-bet:<telegramUserId>`, TTL 15 min): só o Python lê e
+  escreve no Redis. O comando `/cancelar` (alias `/cancel`, `feat-015`) é tratado em
+  `main.capture_bet`, não no n8n, e apaga o estado; foto nova também apaga o estado antes do OCR.
+  No envio, só `5xx`, `408`, `429` e erro de rede preservam o estado (`generic_error_pending`, que
+  cita `/cancelar`); `4xx` permanente limpa (`401` é a exceção, ver o bullet acima). Comando novo do
+  bot que não seja `/vincular ` não precisa de mudança no `n8n/telegram-bot.json`: o ramo de texto
+  já encaminha para `/bets/capture`.
 - Propague `X-Correlation-Id` na chamada ao `api-gateway` (ver
   `../../docs/OBSERVABILITY-AND-CONFIG.md`).
 - **i18n**: mensagens que o bot envia de volta ao usuário (erro de vínculo, confirmação de
