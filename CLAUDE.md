@@ -32,8 +32,13 @@ decididos em `../../docs/CONVENTIONS.md`, `../../docs/TESTING.md` e
   RN02/RN03/RN06/RN07 para o `bets-service` aplicar. Campo `status` enviado sempre em inglês
   (`pending`/`won`/`lost`/`void` — ver `../../docs/API-CONTRACTS.md`).
 - Antes de capturar qualquer aposta, o `telegramUserId` precisa ter um vínculo confirmado com um
-  usuário (`TELEGRAM_ACCOUNT` em `auth-service`) — ver `feat-003`. Um `401` do `api-gateway`
-  nessa chamada normalmente significa "sem vínculo", não uma falha de infraestrutura.
+  usuário (`TELEGRAM_ACCOUNT` em `auth-service`) — ver `feat-003`. Sem vínculo, o `api-gateway`
+  responde `404` com `type` `https://docs/errors/telegram-account-not-found` em **qualquer** rota
+  chamada com `X-Service-Key` (busca de catálogo e envio). `gateway_errors.is_telegram_account_not_found`
+  distingue esse `404` do `404` de item de catálogo inexistente pelo `type`; o bot responde
+  `bet_submit_no_link` e preserva o estado (`feat-014`). `401` não significa "sem vínculo": vem de
+  `X-Service-Key` inválida ou `X-Telegram-User-Id` ausente, ou seja, configuração, e é tratado como
+  indisponibilidade (log de erro, `generic_error_pending`).
   > **Resolvido em 2026-08-02** (ver `../../docs/DECISIONS-LOG.md` item 15): o lookup
   > `telegramUserId -> userId`/`tenantId` em `auth-service` consulta um diretório `TELEGRAM_LINK`
   > no schema `public` (fora de qualquer schema de tenant) — resolve direto, sem o bot precisar
@@ -41,8 +46,9 @@ decididos em `../../docs/CONVENTIONS.md`, `../../docs/TESTING.md` e
 - **Estado da conversa** (`telegram:pending-bet:<telegramUserId>`, TTL 15 min): só o Python lê e
   escreve no Redis. O comando `/cancelar` (alias `/cancel`, `feat-015`) é tratado em
   `main.capture_bet`, não no n8n, e apaga o estado; foto nova também apaga o estado antes do OCR.
-  No envio, só `5xx`, `408`, `429` e erro de rede preservam o estado (`generic_error_pending`, que
-  cita `/cancelar`); `4xx` permanente limpa (`401` é a exceção, ver o bullet acima). Comando novo do
+  No envio, só `5xx`, `408`, `429`, `401` e erro de rede preservam o estado (`generic_error_pending`,
+  que cita `/cancelar`), além do `404` sem vínculo (`bet_submit_no_link`, ver o bullet acima); outro
+  `4xx` permanente limpa. Comando novo do
   bot que não seja `/vincular ` não precisa de mudança no `n8n/telegram-bot.json`: o ramo de texto
   já encaminha para `/bets/capture`.
 - Propague `X-Correlation-Id` na chamada ao `api-gateway` (ver
