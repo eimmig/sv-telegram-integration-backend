@@ -525,7 +525,7 @@
         {
           "id": "feat-014.3",
           "name": "Docs com o status real e verificacao final",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-809",
           "owner": "agente",
           "detail": "Vault e CLAUDE.md do servico afirmam que 401 significa sem vinculo.",
