@@ -61,6 +61,14 @@ def fetch_catalog(
             logger.info("no telegram link fetching %s catalog [correlationId=%s]", resource, correlation_id)
             return CatalogFailure.NO_TELEGRAM_LINK
 
+        if response.status_code == 401:
+            logger.error(
+                "api-gateway rejected the service credentials fetching %s catalog [correlationId=%s]",
+                resource,
+                correlation_id,
+            )
+            return CatalogFailure.UNAVAILABLE
+
         if response.status_code != 200:
             logger.warning(
                 "unexpected status %s fetching %s catalog [correlationId=%s]",

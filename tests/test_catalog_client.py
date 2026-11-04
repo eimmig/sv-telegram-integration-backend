@@ -76,7 +76,9 @@ def test_returns_unavailable_when_gateway_unreachable(monkeypatch: pytest.Monkey
     assert entries is CatalogFailure.UNAVAILABLE
 
 
-def test_returns_unavailable_on_unexpected_status(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rejected_service_credentials_are_unavailable_and_logged_as_error(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, json={"title": "invalid-service-key"})
 
@@ -86,6 +88,7 @@ def test_returns_unavailable_on_unexpected_status(monkeypatch: pytest.MonkeyPatc
     entries = fetch_catalog("sports", "999", correlation_id="corr-1")
 
     assert entries is CatalogFailure.UNAVAILABLE
+    assert any(record.levelname == "ERROR" for record in caplog.records)
 
 
 def test_uses_api_gateway_url_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
