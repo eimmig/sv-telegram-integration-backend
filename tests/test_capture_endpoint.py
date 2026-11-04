@@ -655,3 +655,38 @@ def test_user_without_link_is_told_to_link_when_the_catalog_lookup_gets_the_gate
     assert body["status"] == "blocked"
     assert body["message"] == expected_message
     assert body["bet"] is None
+
+
+_NO_LINK_TYPE = "https://docs/errors/telegram-account-not-found"
+
+
+@pytest.mark.parametrize(
+    ("gateway_response", "expected_prefix"),
+    [
+        (
+            httpx.Response(404, json={"type": _NO_LINK_TYPE, "status": 404}),
+            "Sua conta do Telegram ainda não está vinculada",
+        ),
+        (
+            httpx.Response(401, json={"type": "https://docs/errors/invalid-service-key", "status": 401}),
+            "Ocorreu um erro ao registrar a aposta. Os dados foram guardados",
+        ),
+    ],
+)
+def test_submission_without_link_or_with_bad_service_key_keeps_the_conversation(
+    client: TestClient,
+    redis_client: redis.Redis,
+    monkeypatch: pytest.MonkeyPatch,
+    gateway_response: httpx.Response,
+    expected_prefix: str,
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    gateway = httpx.Client(transport=httpx.MockTransport(lambda _request: gateway_response))
+    monkeypatch.setattr("telegram_integration.bets_client.httpx.post", gateway.post)
+    user = f"submit-{gateway_response.status_code}"
+
+    body = _reach_complete(client, user, f"chat-{user}")
+
+    assert body["status"] == "blocked"
+    assert str(body["message"]).startswith(expected_prefix)
+    assert get_pending(redis_client, user) is not None
