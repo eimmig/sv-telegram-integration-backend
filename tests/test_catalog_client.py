@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from telegram_integration.catalog_client import CatalogEntry, fetch_catalog
+from telegram_integration.catalog_client import CatalogEntry, CatalogFailure, fetch_catalog
 
 
 def _page(content: list[dict[str, str]], page: int, total_pages: int) -> dict[str, object]:
@@ -48,7 +48,7 @@ def test_pages_until_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
 
     entries = fetch_catalog("leagues", "999", correlation_id="corr-1")
 
-    assert entries is not None
+    assert isinstance(entries, list)
     assert len(entries) == 101
     assert entries[-1] == CatalogEntry(id="100", name="League 100")
 
@@ -65,7 +65,7 @@ def test_returns_empty_list_for_empty_catalog(monkeypatch: pytest.MonkeyPatch) -
     assert entries == []
 
 
-def test_returns_none_when_gateway_unreachable(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_returns_unavailable_when_gateway_unreachable(monkeypatch: pytest.MonkeyPatch) -> None:
     def raise_connect_error(*_args: object, **_kwargs: object) -> httpx.Response:
         raise httpx.ConnectError("connection refused")
 
@@ -73,10 +73,10 @@ def test_returns_none_when_gateway_unreachable(monkeypatch: pytest.MonkeyPatch) 
 
     entries = fetch_catalog("betting-houses", "999", correlation_id="corr-1")
 
-    assert entries is None
+    assert entries is CatalogFailure.UNAVAILABLE
 
 
-def test_returns_none_on_unexpected_status(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_returns_unavailable_on_unexpected_status(monkeypatch: pytest.MonkeyPatch) -> None:
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, json={"title": "invalid-service-key"})
 
@@ -85,7 +85,7 @@ def test_returns_none_on_unexpected_status(monkeypatch: pytest.MonkeyPatch) -> N
 
     entries = fetch_catalog("sports", "999", correlation_id="corr-1")
 
-    assert entries is None
+    assert entries is CatalogFailure.UNAVAILABLE
 
 
 def test_uses_api_gateway_url_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -102,3 +102,31 @@ def test_uses_api_gateway_url_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
     fetch_catalog("sports", "999", correlation_id="corr-1")
 
     assert captured_urls == ["http://custom-gateway:9000/api/v1/sports"]
+
+
+def test_returns_no_telegram_link_when_gateway_has_no_link(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            404,
+            json={"type": "https://docs/errors/telegram-account-not-found", "status": 404},
+            headers={"Content-Type": "application/problem+json"},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr("telegram_integration.catalog_client.httpx.get", client.get)
+
+    entries = fetch_catalog("betting-houses", "999", correlation_id="corr-1")
+
+    assert entries is CatalogFailure.NO_TELEGRAM_LINK
+
+
+def test_returns_unavailable_on_404_of_another_type(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"type": "https://docs/errors/tenant-not-found"})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr("telegram_integration.catalog_client.httpx.get", client.get)
+
+    entries = fetch_catalog("sports", "999", correlation_id="corr-1")
+
+    assert entries is CatalogFailure.UNAVAILABLE

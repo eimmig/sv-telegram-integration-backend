@@ -3,8 +3,11 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
+from enum import Enum, auto
 
 import httpx
+
+from telegram_integration.gateway_errors import is_telegram_account_not_found
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,11 @@ class CatalogEntry:
     name: str
 
 
+class CatalogFailure(Enum):
+    UNAVAILABLE = auto()
+    NO_TELEGRAM_LINK = auto()
+
+
 def _api_gateway_url() -> str:
     return os.environ.get("API_GATEWAY_URL", "http://localhost:8080")
 
@@ -26,7 +34,9 @@ def _service_key() -> str:
     return os.environ.get("SERVICE_KEY", "")
 
 
-def fetch_catalog(resource: str, telegram_user_id: str, correlation_id: str) -> list[CatalogEntry] | None:
+def fetch_catalog(
+    resource: str, telegram_user_id: str, correlation_id: str
+) -> list[CatalogEntry] | CatalogFailure:
     entries: list[CatalogEntry] = []
     page = 0
     while True:
@@ -45,7 +55,11 @@ def fetch_catalog(resource: str, telegram_user_id: str, correlation_id: str) -> 
             logger.warning(
                 "api-gateway unreachable fetching %s catalog [correlationId=%s]", resource, correlation_id
             )
-            return None
+            return CatalogFailure.UNAVAILABLE
+
+        if is_telegram_account_not_found(response):
+            logger.info("no telegram link fetching %s catalog [correlationId=%s]", resource, correlation_id)
+            return CatalogFailure.NO_TELEGRAM_LINK
 
         if response.status_code != 200:
             logger.warning(
@@ -54,7 +68,7 @@ def fetch_catalog(resource: str, telegram_user_id: str, correlation_id: str) -> 
                 resource,
                 correlation_id,
             )
-            return None
+            return CatalogFailure.UNAVAILABLE
 
         body = response.json()
         content = body["content"]
