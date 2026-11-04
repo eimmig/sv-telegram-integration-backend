@@ -494,7 +494,7 @@
         {
           "id": "feat-014.1",
           "name": "Sem vinculo na busca de catalogo responde bet_submit_no_link",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-807",
           "owner": "agente",
           "detail": "A busca de catalogo roda antes do envio com os mesmos headers, entao e ela que recebe o 404 sem vinculo e hoje o transforma em erro generico.",
@@ -510,7 +510,7 @@
         {
           "id": "feat-014.2",
           "name": "Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-808",
           "owner": "agente",
           "detail": "O envio mapeava 401 como sem vinculo e todo 404 como FK nao encontrada; o gateway faz o contrario.",
