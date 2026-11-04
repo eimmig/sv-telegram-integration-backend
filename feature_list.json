@@ -510,7 +510,7 @@
         {
           "id": "feat-014.2",
           "name": "Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade",
-          "status": "in-progress",
+          "status": "done",
           "jira": "SV-808",
           "owner": "agente",
           "detail": "O envio mapeava 401 como sem vinculo e todo 404 como FK nao encontrada; o gateway faz o contrario.",
@@ -525,7 +525,7 @@
         {
           "id": "feat-014.3",
           "name": "Docs com o status real e verificacao final",
-          "status": "not-started",
+          "status": "in-progress",
           "jira": "SV-809",
           "owner": "agente",
           "detail": "Vault e CLAUDE.md do servico afirmam que 401 significa sem vinculo.",
