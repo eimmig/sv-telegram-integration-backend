@@ -487,7 +487,7 @@
       "name": "Usuario sem vinculo recebe erro generico em vez da orientacao /vincular",
       "description": "Achado na sessao do TCC 2 de 2026-11-01, so por leitura de codigo (nao reproduzido em execucao), parte do epic-049 da raiz. Sem vinculo, o ServiceKeyAuthenticationFilter do api-gateway responde 404 (TelegramAccountNotFoundException, type .../telegram-account-not-found), como documentado em services/api-gateway/CLAUDE.md. Mas docs/services/telegram-integration.md (passo 6) e services/telegram-integration/CLAUDE.md tratam 401 como 'sem vinculo', e bets_client.py mapeia 401 -> NO_TELEGRAM_LINK e 404 -> CATALOG_ENTRY_NOT_FOUND. Na pratica o envio nem chega: a busca de catalogo (catalog_client.fetch_catalog, mesmos headers) recebe o 404 antes, retorna None, e orchestration.py responde generic_error. A mensagem bet_submit_no_link nunca aparece. Correcao provavel so neste servico: distinguir 'sem vinculo' pelo campo type do problem+json (telegram-account-not-found), tanto na busca de catalogo quanto no envio, sem mudar o contrato do api-gateway; decidir no Plan Reviewer. Definicao de pronto: usuario sem vinculo que manda aposta recebe bet_submit_no_link nos 3 locales, teste cobrindo catalogo e envio, docs/services/telegram-integration.md e CLAUDE.md deste servico com o status real, evidencia aqui e no epic-049.",
       "dependencies": [],
-      "status": "in-progress",
+      "status": "done",
       "plan_review": "2026-11-04, Plan Reviewer (review-suite:ln-11, passada propria - host nao permite subagente sem pedido do usuario, independencia reduzida declarada): READY WITH CONCERNS. Fatos conferidos: sem vinculo o ServiceKeyAuthenticationFilter do api-gateway responde 404 com type https://docs/errors/telegram-account-not-found; 401 so para X-Service-Key invalida ou X-Telegram-User-Id ausente; 404 de FK do bets-service tem type proprio (betting-house-not-found etc.). Decisoes: novo modulo gateway_errors.is_telegram_account_not_found(response) pelo campo type do problem+json; fetch_catalog devolve list | CatalogFailure (UNAVAILABLE, NO_TELEGRAM_LINK) em vez de None; sem vinculo no catalogo preserva o estado e responde bet_submit_no_link; no envio, 404 com esse type -> NO_TELEGRAM_LINK, outro 404 -> CATALOG_ENTRY_NOT_FOUND, 401 -> SERVICE_UNAVAILABLE com log de erro (configuracao, nao vinculo). Contrato do api-gateway e fluxo n8n inalterados; chave bet_submit_no_link ja existe nos 3 locales. Achados absorvidos: (1) MAJOR - CHANGELOG em toda subtask, nao so na ultima (CI valida todo PR). (2) MINOR - remapear 401 esta no escopo (DoD pede o status real na doc). (3) MINOR - sem vinculo loga em info, nao warning. Fora de escopo: usuario sem vinculo so descobre depois de responder odd/stake (checagem antecipada seria feature nova de UX).",
       "jira": "SV-806",
       "subtasks": [
@@ -538,7 +538,44 @@
           "validation": "./init.sh verde; skills de revisao sem achado aberto."
         }
       ],
-      "evidence": "",
+      "evidence": {
+        "resumo": "Fechada em 2026-11-04 (story SV-806, PRs #62, #63, #64 e #65 em develop). Usuario sem vinculo recebe bet_submit_no_link nos 3 locales na busca de catalogo e no envio, com a conversa preservada.",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "gateway_errors.is_telegram_account_not_found: 404 com type https://docs/errors/telegram-account-not-found (tolerante a corpo nao JSON).",
+              "fetch_catalog devolve CatalogFailure (UNAVAILABLE, NO_TELEGRAM_LINK) em vez de None; _advance_catalog responde bet_submit_no_link e salva o estado.",
+              "submit_bet: 404 sem vinculo -> NO_TELEGRAM_LINK, outro 404 -> CATALOG_ENTRY_NOT_FOUND, 401 -> SERVICE_UNAVAILABLE com log de erro; catalogo tambem loga 401 em error.",
+              "CLAUDE.md do servico, docs/services/telegram-integration.md (introducao, passos 4 e 6) e docs/services/api-gateway.md com o status real."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "./init.sh verde: ruff, mypy strict, 133 testes, cobertura 100%; suite repetida 3x sem falha.",
+              "Testes de endpoint com o fetch_catalog real e o 404 do gateway mockado (pt-BR e en-US) e com o envio real (404 sem vinculo e 401 preservam o estado).",
+              "CI verde nos 4 PRs; SonarCloud verde no PR #65 (story -> develop).",
+              "Plan Reviewer READY WITH CONCERNS; Delivery Reviewer CONCERNS (P3: 401 no catalogo logava warning, corrigido no PR #64); Test Suite Auditor PASS."
+            ]
+          },
+          {
+            "titulo": "O que divergiu do plano",
+            "itens": [
+              "CHANGELOG: as linhas das 3 subtasks foram gravadas pelo tools/jira_story.py na criacao da story, nao em cada PR.",
+              "Log de erro do 401 tambem na busca de catalogo (achado do Delivery Reviewer).",
+              "Nao validado no Telegram real: producao so roda a imagem nova depois do rollout manual."
+            ]
+          },
+          {
+            "titulo": "Fora de escopo",
+            "itens": [
+              "Usuario sem vinculo so recebe a orientacao depois de responder odd/stake (checagem antecipada seria feature nova de UX).",
+              "Teste de contrato do slug telegram-account-not-found entre api-gateway e telegram-integration nao existe; contrato documentado em docs/services/api-gateway.md."
+            ]
+          }
+        ]
+      },
       "goal": "Usuario do Telegram sem vinculo que tenta registrar aposta recebe a orientacao `/vincular` nos 3 locales em vez de erro generico.",
       "scope": "Leitura do `type` do problem+json do api-gateway na busca de catalogo e no envio; 401 tratado como falha de configuracao; docs e CLAUDE.md com o status real. Sem mudar o contrato do api-gateway nem o fluxo n8n."
     },
