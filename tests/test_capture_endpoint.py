@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+import httpx
 import pytest
 import redis
 from fastapi.testclient import TestClient
@@ -11,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 from testcontainers.community.redis import RedisContainer
 
 from telegram_integration.bets_client import SubmitOutcome
-from telegram_integration.catalog_client import CatalogEntry
+from telegram_integration.catalog_client import CatalogEntry, CatalogFailure
 from telegram_integration.conversation import get_pending
 from telegram_integration.main import app, get_redis_client
 
@@ -548,7 +549,9 @@ def test_photo_is_never_treated_as_reset_command(client: TestClient, redis_clien
 def test_generic_error_with_preserved_state_follows_language_code(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", lambda *_a: None)
+    monkeypatch.setattr(
+        "telegram_integration.orchestration.fetch_catalog", lambda *_a: CatalogFailure.UNAVAILABLE
+    )
 
     body = _post_text(client, "pending-error-en", "Bet365, odd 1.85, valor R$ 50,00", "en")
 
@@ -612,3 +615,78 @@ def test_permanent_rejection_clears_the_conversation(
     retry = _post_text(client, "rejected-user", "qualquer coisa")
     assert retry["status"] == "pending"
     assert retry["message"] == "Qual foi a odd dessa aposta?"
+
+
+@pytest.mark.parametrize(
+    ("language_code", "expected_message"),
+    [
+        (
+            "pt-BR",
+            "Sua conta do Telegram ainda não está vinculada. Envie /vincular <código> (gerado no site) "
+            "antes de registrar apostas por aqui.",
+        ),
+        (
+            "en-US",
+            "Your Telegram account isn't linked yet. Send /vincular <code> (generated on the website) "
+            "before capturing bets here.",
+        ),
+    ],
+)
+def test_user_without_link_is_told_to_link_when_the_catalog_lookup_gets_the_gateway_404(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, language_code: str, expected_message: str
+) -> None:
+    def gateway_without_link(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            404,
+            json={"type": "https://docs/errors/telegram-account-not-found", "status": 404},
+            headers={"Content-Type": "application/problem+json"},
+        )
+
+    gateway = httpx.Client(transport=httpx.MockTransport(gateway_without_link))
+    monkeypatch.setattr("telegram_integration.catalog_client.httpx.get", gateway.get)
+
+    def _must_not_submit(*_args: object) -> SubmitOutcome:
+        raise AssertionError("bet must not be submitted without a link")
+
+    monkeypatch.setattr("telegram_integration.main.submit_bet", _must_not_submit)
+
+    body = _post_text(client, f"no-link-{language_code}", "Bet365, odd 1.85, valor R$ 50,00", language_code)
+
+    assert body["status"] == "blocked"
+    assert body["message"] == expected_message
+    assert body["bet"] is None
+
+
+_NO_LINK_TYPE = "https://docs/errors/telegram-account-not-found"
+
+
+@pytest.mark.parametrize(
+    ("gateway_response", "expected_prefix"),
+    [
+        (
+            httpx.Response(404, json={"type": _NO_LINK_TYPE, "status": 404}),
+            "Sua conta do Telegram ainda não está vinculada",
+        ),
+        (
+            httpx.Response(401, json={"type": "https://docs/errors/invalid-service-key", "status": 401}),
+            "Ocorreu um erro ao registrar a aposta. Os dados foram guardados",
+        ),
+    ],
+)
+def test_submission_without_link_or_with_bad_service_key_keeps_the_conversation(
+    client: TestClient,
+    redis_client: redis.Redis,
+    monkeypatch: pytest.MonkeyPatch,
+    gateway_response: httpx.Response,
+    expected_prefix: str,
+) -> None:
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    gateway = httpx.Client(transport=httpx.MockTransport(lambda _request: gateway_response))
+    monkeypatch.setattr("telegram_integration.bets_client.httpx.post", gateway.post)
+    user = f"submit-{gateway_response.status_code}"
+
+    body = _reach_complete(client, user, f"chat-{user}")
+
+    assert body["status"] == "blocked"
+    assert str(body["message"]).startswith(expected_prefix)
+    assert get_pending(redis_client, user) is not None

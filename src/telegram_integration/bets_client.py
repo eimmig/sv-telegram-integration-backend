@@ -6,6 +6,8 @@ from enum import Enum, auto
 
 import httpx
 
+from telegram_integration.gateway_errors import is_telegram_account_not_found
+
 logger = logging.getLogger(__name__)
 
 _TIMEOUT_SECONDS = 5.0
@@ -24,7 +26,6 @@ class SubmitOutcome(Enum):
 _STATUS_TO_OUTCOME = {
     201: SubmitOutcome.CREATED,
     200: SubmitOutcome.ALREADY_SUBMITTED,
-    401: SubmitOutcome.NO_TELEGRAM_LINK,
     404: SubmitOutcome.CATALOG_ENTRY_NOT_FOUND,
     422: SubmitOutcome.VALIDATION_FAILED,
 }
@@ -65,6 +66,15 @@ def submit_bet(
         )
     except httpx.HTTPError:
         logger.warning("api-gateway unreachable submitting bet [correlationId=%s]", correlation_id)
+        return SubmitOutcome.SERVICE_UNAVAILABLE
+
+    if is_telegram_account_not_found(response):
+        logger.info("no telegram link submitting bet [correlationId=%s]", correlation_id)
+        return SubmitOutcome.NO_TELEGRAM_LINK
+    if response.status_code == 401:
+        logger.error(
+            "api-gateway rejected the service credentials submitting bet [correlationId=%s]", correlation_id
+        )
         return SubmitOutcome.SERVICE_UNAVAILABLE
 
     outcome = _STATUS_TO_OUTCOME.get(response.status_code)

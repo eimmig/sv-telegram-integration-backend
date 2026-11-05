@@ -487,11 +487,60 @@
       "name": "Usuario sem vinculo recebe erro generico em vez da orientacao /vincular",
       "description": "Achado na sessao do TCC 2 de 2026-11-01, so por leitura de codigo (nao reproduzido em execucao), parte do epic-049 da raiz. Sem vinculo, o ServiceKeyAuthenticationFilter do api-gateway responde 404 (TelegramAccountNotFoundException, type .../telegram-account-not-found), como documentado em services/api-gateway/CLAUDE.md. Mas docs/services/telegram-integration.md (passo 6) e services/telegram-integration/CLAUDE.md tratam 401 como 'sem vinculo', e bets_client.py mapeia 401 -> NO_TELEGRAM_LINK e 404 -> CATALOG_ENTRY_NOT_FOUND. Na pratica o envio nem chega: a busca de catalogo (catalog_client.fetch_catalog, mesmos headers) recebe o 404 antes, retorna None, e orchestration.py responde generic_error. A mensagem bet_submit_no_link nunca aparece. Correcao provavel so neste servico: distinguir 'sem vinculo' pelo campo type do problem+json (telegram-account-not-found), tanto na busca de catalogo quanto no envio, sem mudar o contrato do api-gateway; decidir no Plan Reviewer. Definicao de pronto: usuario sem vinculo que manda aposta recebe bet_submit_no_link nos 3 locales, teste cobrindo catalogo e envio, docs/services/telegram-integration.md e CLAUDE.md deste servico com o status real, evidencia aqui e no epic-049.",
       "dependencies": [],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
-      "evidence": ""
+      "status": "in-progress",
+      "plan_review": "2026-11-04, Plan Reviewer (review-suite:ln-11, passada propria - host nao permite subagente sem pedido do usuario, independencia reduzida declarada): READY WITH CONCERNS. Fatos conferidos: sem vinculo o ServiceKeyAuthenticationFilter do api-gateway responde 404 com type https://docs/errors/telegram-account-not-found; 401 so para X-Service-Key invalida ou X-Telegram-User-Id ausente; 404 de FK do bets-service tem type proprio (betting-house-not-found etc.). Decisoes: novo modulo gateway_errors.is_telegram_account_not_found(response) pelo campo type do problem+json; fetch_catalog devolve list | CatalogFailure (UNAVAILABLE, NO_TELEGRAM_LINK) em vez de None; sem vinculo no catalogo preserva o estado e responde bet_submit_no_link; no envio, 404 com esse type -> NO_TELEGRAM_LINK, outro 404 -> CATALOG_ENTRY_NOT_FOUND, 401 -> SERVICE_UNAVAILABLE com log de erro (configuracao, nao vinculo). Contrato do api-gateway e fluxo n8n inalterados; chave bet_submit_no_link ja existe nos 3 locales. Achados absorvidos: (1) MAJOR - CHANGELOG em toda subtask, nao so na ultima (CI valida todo PR). (2) MINOR - remapear 401 esta no escopo (DoD pede o status real na doc). (3) MINOR - sem vinculo loga em info, nao warning. Fora de escopo: usuario sem vinculo so descobre depois de responder odd/stake (checagem antecipada seria feature nova de UX).",
+      "jira": "SV-806",
+      "subtasks": [
+        {
+          "id": "feat-014.1",
+          "name": "Sem vinculo na busca de catalogo responde bet_submit_no_link",
+          "status": "done",
+          "jira": "SV-807",
+          "owner": "agente",
+          "detail": "A busca de catalogo roda antes do envio com os mesmos headers, entao e ela que recebe o 404 sem vinculo e hoje o transforma em erro generico.",
+          "checklist": [
+            "Modulo `gateway_errors.py` com `is_telegram_account_not_found(response)` (status 404 e `type` terminando em `/telegram-account-not-found`, tolerante a corpo nao JSON).",
+            "`fetch_catalog` devolve `list[CatalogEntry] | CatalogFailure` (`UNAVAILABLE`, `NO_TELEGRAM_LINK`); sem vinculo loga em info.",
+            "`_advance_catalog`: `NO_TELEGRAM_LINK` salva o estado e responde `bet_submit_no_link` (status blocked).",
+            "Testes: catalog_client (404 com e sem o type, corpo nao JSON), orchestration, endpoint `/bets/capture` com 404 vindo do catalogo em pt-BR e en-US.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-014.2",
+          "name": "Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade",
+          "status": "done",
+          "jira": "SV-808",
+          "owner": "agente",
+          "detail": "O envio mapeava 401 como sem vinculo e todo 404 como FK nao encontrada; o gateway faz o contrario.",
+          "checklist": [
+            "`submit_bet`: 404 com type telegram-account-not-found -> `NO_TELEGRAM_LINK`; outro 404 -> `CATALOG_ENTRY_NOT_FOUND`.",
+            "401 -> `SERVICE_UNAVAILABLE` com `logger.error` (X-Service-Key invalida ou header ausente).",
+            "Testes de test_bets_client atualizados e endpoint confirmando que o estado e preservado sem vinculo.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-014.3",
+          "name": "Docs com o status real e verificacao final",
+          "status": "done",
+          "jira": "SV-809",
+          "owner": "agente",
+          "detail": "Vault e CLAUDE.md do servico afirmam que 401 significa sem vinculo.",
+          "checklist": [
+            "`docs/services/telegram-integration.md` (introducao e passo 6) e `CLAUDE.md` deste servico com 404 + type para sem vinculo e 401 como configuracao.",
+            "CHANGELOG.md: entrada em [Unreleased].",
+            "Vault (`docs/`) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao `docs/DECISIONS-LOG.md` a menos que divirja do TCC 1) no mesmo commit.",
+            "`./init.sh` verde; Delivery Reviewer e Test Suite Auditor rodados."
+          ],
+          "validation": "./init.sh verde; skills de revisao sem achado aberto."
+        }
+      ],
+      "evidence": "",
+      "goal": "Usuario do Telegram sem vinculo que tenta registrar aposta recebe a orientacao `/vincular` nos 3 locales em vez de erro generico.",
+      "scope": "Leitura do `type` do problem+json do api-gateway na busca de catalogo e no envio; 401 tratado como falha de configuracao; docs e CLAUDE.md com o status real. Sem mudar o contrato do api-gateway nem o fluxo n8n."
     },
     {
       "id": "feat-015",

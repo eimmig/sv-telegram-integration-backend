@@ -7,7 +7,7 @@ import pytest
 import redis
 from testcontainers.community.redis import RedisContainer
 
-from telegram_integration.catalog_client import CatalogEntry
+from telegram_integration.catalog_client import CatalogEntry, CatalogFailure
 from telegram_integration.conversation import get_pending
 from telegram_integration.orchestration import handle_message
 
@@ -197,9 +197,9 @@ def test_unreachable_catalog_blocks_but_preserves_progress(
 ) -> None:
     def unreachable_sports(
         resource: str, telegram_user_id: str, correlation_id: str
-    ) -> list[CatalogEntry] | None:
+    ) -> list[CatalogEntry] | CatalogFailure:
         if resource == "sports":
-            return None
+            return CatalogFailure.UNAVAILABLE
         return _stub_fetch_catalog(resource, telegram_user_id, correlation_id)
 
     monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", unreachable_sports)
@@ -248,3 +248,30 @@ def test_asks_in_english_when_language_code_is_en(redis_client: redis.Redis) -> 
     result = handle_message(redis_client, "user-f", "en", "no useful info here", "corr-1")
 
     assert result.message == "What was the odd on that bet?"
+
+
+def test_no_telegram_link_in_catalog_lookup_asks_to_link_and_preserves_progress(
+    redis_client: redis.Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "telegram_integration.orchestration.fetch_catalog", lambda *_a: CatalogFailure.NO_TELEGRAM_LINK
+    )
+
+    text = "Bet365, odd 1.85, valor R$ 50,00"
+    result = handle_message(redis_client, "user-nolink", "pt-BR", text, "corr-1")
+
+    assert result.status == "blocked"
+    assert result.message == (
+        "Sua conta do Telegram ainda não está vinculada. Envie /vincular <código> (gerado no site) "
+        "antes de registrar apostas por aqui."
+    )
+    pending = get_pending(redis_client, "user-nolink")
+    assert pending is not None
+    assert pending.fields["odd"] == "1.85"
+    assert pending.awaiting_catalog is None
+
+    monkeypatch.setattr("telegram_integration.orchestration.fetch_catalog", _stub_fetch_catalog)
+    resumed = handle_message(redis_client, "user-nolink", "pt-BR", "ok", "corr-2")
+
+    assert resumed.status == "pending"
+    assert resumed.message.startswith("Qual o esporte")

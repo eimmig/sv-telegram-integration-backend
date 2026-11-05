@@ -6,6 +6,10 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 (ver `docs/CI-CD.md`).
 
 ## [Unreleased]
+- [SV-806](https://stakevault.atlassian.net/browse/SV-806) - Usuario sem vinculo recebe erro generico em vez da orientacao /vincular
+- [SV-807](https://stakevault.atlassian.net/browse/SV-807) - Sem vinculo na busca de catalogo responde bet_submit_no_link
+- [SV-808](https://stakevault.atlassian.net/browse/SV-808) - Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade
+- [SV-809](https://stakevault.atlassian.net/browse/SV-809) - Docs com o status real e verificacao final
 
 ## [0.2.0] - 2026-11-02
 

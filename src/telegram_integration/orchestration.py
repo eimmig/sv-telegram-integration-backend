@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import redis
 
-from telegram_integration.catalog_client import CatalogEntry, fetch_catalog
+from telegram_integration.catalog_client import CatalogEntry, CatalogFailure, fetch_catalog
 from telegram_integration.conversation import (
     CatalogQuestion,
     PendingBet,
@@ -49,6 +49,10 @@ _CATALOG_EMPTY_KEYS = {
     "sport": "catalog_empty_sport",
     "league": "catalog_empty_league",
     "market": "catalog_empty_market",
+}
+_CATALOG_FAILURE_KEYS = {
+    CatalogFailure.UNAVAILABLE: "generic_error_pending",
+    CatalogFailure.NO_TELEGRAM_LINK: "bet_submit_no_link",
 }
 
 
@@ -103,9 +107,9 @@ def _advance_catalog(
             continue
 
         options = fetch_catalog(_CATALOG_RESOURCE[catalog_type], telegram_user_id, correlation_id)
-        if options is None:
+        if isinstance(options, CatalogFailure):
             save_pending(client, telegram_user_id, PendingBet(fields=fields, catalog_ids=catalog_ids))
-            error_message = get_message("generic_error_pending", language_code)
+            error_message = get_message(_CATALOG_FAILURE_KEYS[options], language_code)
             return CaptureResult(status="blocked", message=error_message, bet=None)
 
         if not options:

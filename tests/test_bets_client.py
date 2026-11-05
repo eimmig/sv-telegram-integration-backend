@@ -17,7 +17,7 @@ _BET: dict[str, str | None] = {
 }
 
 
-def _mock_client(status_code: int) -> httpx.Client:
+def _mock_client(status_code: int, problem_type: str | None = None) -> httpx.Client:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/v1/bets"
         assert request.headers["X-Service-Key"] == "test-key"
@@ -34,7 +34,9 @@ def _mock_client(status_code: int) -> httpx.Client:
             "odd": "1.85",
             "betDate": f"{_BET['bet_date']}T00:00:00Z",
         }
-        return httpx.Response(status_code)
+        if problem_type is None:
+            return httpx.Response(status_code)
+        return httpx.Response(status_code, json={"type": problem_type, "status": status_code})
 
     return httpx.Client(transport=httpx.MockTransport(handler))
 
@@ -44,7 +46,7 @@ def _mock_client(status_code: int) -> httpx.Client:
     [
         (201, SubmitOutcome.CREATED),
         (200, SubmitOutcome.ALREADY_SUBMITTED),
-        (401, SubmitOutcome.NO_TELEGRAM_LINK),
+        (401, SubmitOutcome.SERVICE_UNAVAILABLE),
         (404, SubmitOutcome.CATALOG_ENTRY_NOT_FOUND),
         (422, SubmitOutcome.VALIDATION_FAILED),
         (400, SubmitOutcome.REJECTED),
@@ -93,3 +95,22 @@ def test_uses_api_gateway_url_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
     submit_bet(_BET, "999", "idem-1", "corr-1")
 
     assert captured_urls == ["http://custom-gateway:9000/api/v1/bets"]
+
+
+@pytest.mark.parametrize(
+    ("problem_type", "expected"),
+    [
+        ("https://docs/errors/telegram-account-not-found", SubmitOutcome.NO_TELEGRAM_LINK),
+        ("https://docs/errors/betting-house-not-found", SubmitOutcome.CATALOG_ENTRY_NOT_FOUND),
+    ],
+)
+def test_distinguishes_missing_link_from_missing_catalog_entry_on_404(
+    monkeypatch: pytest.MonkeyPatch, problem_type: str, expected: SubmitOutcome
+) -> None:
+    monkeypatch.setenv("SERVICE_KEY", "test-key")
+    client = _mock_client(404, problem_type)
+    monkeypatch.setattr("telegram_integration.bets_client.httpx.post", client.post)
+
+    outcome = submit_bet(_BET, "999", idempotency_key="idem-1", correlation_id="corr-1")
+
+    assert outcome is expected
