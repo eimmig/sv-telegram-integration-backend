@@ -701,6 +701,38 @@
       "jira": "",
       "subtasks": [],
       "evidence": ""
+    },
+    {
+      "id": "feat-017",
+      "name": "Ampliar imagens pequenas no OCR e corrigir regras de extracao",
+      "goal": "Melhorar a leitura dos campos medida em 2026-11-16 (tools/evidence/11-telegram-acuracia.py na imagem de producao): nas 5 fotos reais a odd saiu certa em 1 e houve 2 valores errados; nas 60 mensagens simuladas, 27 valores, 4 odds e 3 casas ficaram ausentes e 1 odd saiu errada.",
+      "scope": "ocr.extract_text amplia 2x (LANCZOS) imagens com menos de 1200 px de largura antes do Tesseract (as capturas de tela tem 300 a 570 px; no experimento, ampliar 2x deu odd e valor certos nos 5 bilhetes, sem valor errado). extraction: valor apostado tambem com 'N reais', 'valor N' e 'apostei N'; esses valores saem do texto antes da busca da odd solta; odd aceita virgula ou ponto final de frase logo depois do numero; casa reconhecida ignorando espacos ('bet 365', 'sporting bet'). Testes unitarios de cada caso.",
+      "description": "Sem dependencia nova (Pillow ja e dependencia). O contrato com o n8n e com o bets-service nao muda. Reavaliacao com um conjunto novo de mensagens (outra semente) para nao medir as regras nas mesmas mensagens usadas para escolhe-las.",
+      "dependencies": [
+        "feat-014"
+      ],
+      "plan_review": "2026-11-16, Plan Reviewer em auto-revisao curta (independencia reduzida, declarada). Veredito: READY WITH CONCERNS. (1) Ampliar so abaixo de 1200 px evita custo em fotos de camera, que ja sao grandes; o tempo do Tesseract cresce com a area, aceitavel para imagens de ate 1140 px. (2) Risco de sobreajuste: a ampliacao foi escolhida nos mesmos 5 bilhetes usados para medir; o texto do TCC declara isso, e as regras de texto sao medidas em mensagens novas (semente diferente). (3) Ignorar espacos na casa pode casar nomes curtos dentro de outras palavras ('kto'); mantido porque o catalogo atual nao tem nome que apareca como parte de palavra comum em portugues, e o bot pergunta a casa quando nao ha correspondencia no catalogo do tenant.",
+      "status": "in-progress",
+      "subtasks": [
+        {
+          "id": "feat-017.1",
+          "name": "Ampliacao no OCR e regras de extracao",
+          "status": "in-progress",
+          "detail": "ocr.py e extraction.py, com testes.",
+          "checklist": [
+            "Teste vermelho antes de cada correcao.",
+            "Ampliacao 2x abaixo de 1200 px.",
+            "Valor com 'reais', 'valor' e 'apostei'; odd com virgula depois; casa sem espacos.",
+            "CHANGELOG em [Unreleased].",
+            "Vault (docs/) revisado: docs/services/telegram-integration.md com a ampliacao e as regras."
+          ],
+          "validation": "./init.sh verde; CI e SonarCloud verdes; reavaliacao com 11-telegram-acuracia.py na imagem nova.",
+          "owner": "agente",
+          "jira": "SV-863"
+        }
+      ],
+      "jira": "SV-862",
+      "evidence": ""
     }
   ]
 }
