@@ -4,8 +4,16 @@ import re
 from dataclasses import dataclass
 
 _CURRENCY_AMOUNT_PATTERN = re.compile(r"(?:R\$|\$)\s*\d+(?:[.,]\d{2})?", re.IGNORECASE)
-_ODD_PATTERN = re.compile(r"(?<![\d.,])(\d{1,3}[.,]\d{2})(?![\d.,])")
+# A odd solta nao pode vir colada em outro numero, mas pode vir seguida de virgula ou ponto
+# de pontuacao ("3.88, pela pixbet"; "odd 1.90.").
+_ODD_PATTERN = re.compile(r"(?<![\d.,])(\d{1,3}[.,]\d{2})(?!\d|[.,]\d)")
 _STAKE_PATTERN = re.compile(r"(?:R\$|\$)\s*(\d+(?:[.,]\d{2})?)", re.IGNORECASE)
+# Formas sem "R$", em ordem de prioridade depois dela: "50 reais", "valor 5,00", "apostei 100".
+_STAKE_WITHOUT_CURRENCY_PATTERNS = (
+    re.compile(r"(?<![\d.,])(\d+(?:[.,]\d{1,2})?)\s*reais\b", re.IGNORECASE),
+    re.compile(r"\bvalor\s*(?:de\s*|:\s*)?(\d+(?:[.,]\d{1,2})?)(?![\d])", re.IGNORECASE),
+    re.compile(r"\bapostei\s*(\d+(?:[.,]\d{1,2})?)(?![\d])", re.IGNORECASE),
+)
 _ODD_KEYWORD_LINE = re.compile(r"(?:odd|cota[cç][aã]o)\D{0,10}(\d{1,3}[.,]\d{2})", re.IGNORECASE)
 _ODD_AT_PATTERN = re.compile(r"@\s*(\d{1,3}[.,]\d{2})")
 
@@ -49,6 +57,8 @@ def _extract_odd(text: str) -> str | None:
     if at_match:
         return at_match.group(1).replace(",", ".")
     text_without_currency = _CURRENCY_AMOUNT_PATTERN.sub("", text)
+    for pattern in _STAKE_WITHOUT_CURRENCY_PATTERNS:
+        text_without_currency = pattern.sub("", text_without_currency)
     for candidate in _ODD_PATTERN.finditer(text_without_currency):
         value = float(candidate.group(1).replace(",", "."))
         if 1.01 <= value <= 1000:
@@ -59,14 +69,20 @@ def _extract_odd(text: str) -> str | None:
 def _extract_stake(text: str) -> str | None:
     match = _STAKE_PATTERN.search(text)
     if match is None:
+        for pattern in _STAKE_WITHOUT_CURRENCY_PATTERNS:
+            match = pattern.search(text)
+            if match is not None:
+                break
+    if match is None:
         return None
     return match.group(1).replace(",", ".")
 
 
 def _extract_betting_house(text: str) -> str | None:
-    lowered = text.lower()
+    # Sem espacos dos dois lados, para aceitar "bet 365" e "sporting bet".
+    compact = re.sub(r"\s+", "", text.lower())
     for house in _KNOWN_BETTING_HOUSES:
-        if house.lower() in lowered:
+        if house.lower() in compact:
             return house
     return None
 
