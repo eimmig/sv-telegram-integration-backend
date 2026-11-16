@@ -10,6 +10,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-807](https://stakevault.atlassian.net/browse/SV-807) - Sem vinculo na busca de catalogo responde bet_submit_no_link
 - [SV-808](https://stakevault.atlassian.net/browse/SV-808) - Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade
 - [SV-809](https://stakevault.atlassian.net/browse/SV-809) - Docs com o status real e verificacao final
+- [SV-862](https://stakevault.atlassian.net/browse/SV-862) - Ampliar imagens pequenas no OCR e corrigir regras de extracao
+- [SV-863](https://stakevault.atlassian.net/browse/SV-863) - Ampliacao no OCR e regras de extracao
 
 ## [0.2.0] - 2026-11-02
 
