@@ -746,6 +746,38 @@
       "subtasks": [],
       "jira": "",
       "evidence": ""
+    },
+    {
+      "id": "feat-019",
+      "name": "Regras mais gerais para valor apostado e odd",
+      "goal": "Reduzir os valores nao reconhecidos e as odds erradas medidos no conjunto de controle da feat-017 (valor 0/40, odd errada 8/40): o numero do valor nao pode mais virar odd quando vem com outra palavra-chave.",
+      "scope": "extraction: valor com palavra-chave antes (stake, valor, aposta, apostei, valendo, BRL, R$, $) ou depois (reais, conto, contos, de stake, $, BRL); odd com odd/odds/cotacao/pagando/quota antes, \"de odd\" depois, @, x antes ou depois; valores removidos do texto antes da odd solta e da busca da casa (a palavra stake deixa de casar com a casa Stake quando seguida de numero). Testes unitarios. Medicao em um conjunto novo de formas de escrita, escrito antes da mudanca (controle 2).",
+      "description": "",
+      "dependencies": [
+        "feat-017"
+      ],
+      "plan_review": "2026-11-16, Plan Reviewer em auto-revisao curta (independencia reduzida, declarada). Veredito: READY WITH CONCERNS. O conjunto de controle da feat-017 passa a ser usado para ajustar as regras e deixa de medir generalizacao; por isso um conjunto novo (controle 2) e escrito antes de codificar e nao e usado para ajuste. A confirmacao dos campos (feat-018) fica fora, por decisao do usuario. Risco: regras mais largas podem pegar numero que nao e valor (ex.: aposta de 2 gols); os testes do conjunto principal e das fotos precisam continuar sem valor errado.",
+      "status": "done",
+      "subtasks": [
+        {
+          "id": "feat-019.1",
+          "name": "Regras de valor e odd e testes",
+          "status": "done",
+          "detail": "Regras de valor e odd e testes",
+          "checklist": [
+            "Controle 2 escrito e commitado antes do codigo.",
+            "Testes vermelhos antes.",
+            "Sem valor errado nas mensagens e nas fotos.",
+            "CHANGELOG em [Unreleased].",
+            "Vault (docs/) revisado: services/telegram-integration.md."
+          ],
+          "validation": "./init.sh verde; CI e SonarCloud verdes.",
+          "owner": "agente",
+          "jira": "SV-875"
+        }
+      ],
+      "jira": "SV-874",
+      "evidence": "Entregue em 2026-11-16 (feature/SV-874, PR #69). Regras mais gerais de valor e odd; odd sem marca so quando sobra um unico valor (senao o bot pergunta); valores removidos antes da casa. 6 testes novos, ./init.sh verde (149 testes, cobertura 100%). Medicao em evidencias/20261116-telegram-feat019 (antes = v0.3.0, depois = imagem nova): controle 2, escrito antes da mudanca, odd errada 11 -> 2. Auto-revisao (Delivery Reviewer e Test Suite Auditor em modo curto, independencia reduzida)."
     }
   ]
 }

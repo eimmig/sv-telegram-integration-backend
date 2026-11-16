@@ -14,6 +14,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 - [SV-809](https://stakevault.atlassian.net/browse/SV-809) - Docs com o status real e verificacao final
 - [SV-862](https://stakevault.atlassian.net/browse/SV-862) - Ampliar imagens pequenas no OCR e corrigir regras de extracao
 - [SV-863](https://stakevault.atlassian.net/browse/SV-863) - Ampliacao no OCR e regras de extracao
+- [SV-874](https://stakevault.atlassian.net/browse/SV-874) - Regras mais gerais para valor apostado e odd
+- [SV-875](https://stakevault.atlassian.net/browse/SV-875) - Regras de valor e odd e testes
 
 ## [0.2.0] - 2026-11-02
 
