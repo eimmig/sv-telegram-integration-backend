@@ -712,12 +712,12 @@
         "feat-014"
       ],
       "plan_review": "2026-11-16, Plan Reviewer em auto-revisao curta (independencia reduzida, declarada). Veredito: READY WITH CONCERNS. (1) Ampliar so abaixo de 1200 px evita custo em fotos de camera, que ja sao grandes; o tempo do Tesseract cresce com a area, aceitavel para imagens de ate 1140 px. (2) Risco de sobreajuste: a ampliacao foi escolhida nos mesmos 5 bilhetes usados para medir; o texto do TCC declara isso, e as regras de texto sao medidas em mensagens novas (semente diferente). (3) Ignorar espacos na casa pode casar nomes curtos dentro de outras palavras ('kto'); mantido porque o catalogo atual nao tem nome que apareca como parte de palavra comum em portugues, e o bot pergunta a casa quando nao ha correspondencia no catalogo do tenant.",
-      "status": "in-progress",
+      "status": "done",
       "subtasks": [
         {
           "id": "feat-017.1",
           "name": "Ampliacao no OCR e regras de extracao",
-          "status": "in-progress",
+          "status": "done",
           "detail": "ocr.py e extraction.py, com testes.",
           "checklist": [
             "Teste vermelho antes de cada correcao.",
@@ -732,7 +732,7 @@
         }
       ],
       "jira": "SV-862",
-      "evidence": ""
+      "evidence": "Entregue em 2026-11-16 (feature/SV-862, PR #66). ocr.upscale_for_ocr amplia 2x abaixo de 1200 px; extraction aceita 'N reais', 'valor N', 'apostei N', virgula depois da odd e casa sem espacos. ./init.sh verde (143 testes, cobertura 100%). Reavaliacao com tools/evidence/11-telegram-acuracia.py na imagem nova em evidencias/20261116-telegram-pos-feat017. Conjunto de controle revelou falha anterior e mantida (valor em forma nao reconhecida tomado como odd, 8 de 40): feat-018 no backlog. Auto-revisao (Delivery Reviewer e Test Suite Auditor em modo curto, independencia reduzida)."
     },
     {
       "id": "feat-018",
