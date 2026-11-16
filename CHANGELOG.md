@@ -7,6 +7,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-16
+
 ## [0.3.0] - 2026-11-16
 - [SV-806](https://stakevault.atlassian.net/browse/SV-806) - Usuario sem vinculo recebe erro generico em vez da orientacao /vincular
 - [SV-807](https://stakevault.atlassian.net/browse/SV-807) - Sem vinculo na busca de catalogo responde bet_submit_no_link
