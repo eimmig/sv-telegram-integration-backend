@@ -487,11 +487,97 @@
       "name": "Usuario sem vinculo recebe erro generico em vez da orientacao /vincular",
       "description": "Achado na sessao do TCC 2 de 2026-11-01, so por leitura de codigo (nao reproduzido em execucao), parte do epic-049 da raiz. Sem vinculo, o ServiceKeyAuthenticationFilter do api-gateway responde 404 (TelegramAccountNotFoundException, type .../telegram-account-not-found), como documentado em services/api-gateway/CLAUDE.md. Mas docs/services/telegram-integration.md (passo 6) e services/telegram-integration/CLAUDE.md tratam 401 como 'sem vinculo', e bets_client.py mapeia 401 -> NO_TELEGRAM_LINK e 404 -> CATALOG_ENTRY_NOT_FOUND. Na pratica o envio nem chega: a busca de catalogo (catalog_client.fetch_catalog, mesmos headers) recebe o 404 antes, retorna None, e orchestration.py responde generic_error. A mensagem bet_submit_no_link nunca aparece. Correcao provavel so neste servico: distinguir 'sem vinculo' pelo campo type do problem+json (telegram-account-not-found), tanto na busca de catalogo quanto no envio, sem mudar o contrato do api-gateway; decidir no Plan Reviewer. Definicao de pronto: usuario sem vinculo que manda aposta recebe bet_submit_no_link nos 3 locales, teste cobrindo catalogo e envio, docs/services/telegram-integration.md e CLAUDE.md deste servico com o status real, evidencia aqui e no epic-049.",
       "dependencies": [],
-      "status": "not-started",
-      "plan_review": "",
-      "jira": "",
-      "subtasks": [],
-      "evidence": ""
+      "status": "done",
+      "plan_review": "2026-11-04, Plan Reviewer (review-suite:ln-11, passada propria - host nao permite subagente sem pedido do usuario, independencia reduzida declarada): READY WITH CONCERNS. Fatos conferidos: sem vinculo o ServiceKeyAuthenticationFilter do api-gateway responde 404 com type https://docs/errors/telegram-account-not-found; 401 so para X-Service-Key invalida ou X-Telegram-User-Id ausente; 404 de FK do bets-service tem type proprio (betting-house-not-found etc.). Decisoes: novo modulo gateway_errors.is_telegram_account_not_found(response) pelo campo type do problem+json; fetch_catalog devolve list | CatalogFailure (UNAVAILABLE, NO_TELEGRAM_LINK) em vez de None; sem vinculo no catalogo preserva o estado e responde bet_submit_no_link; no envio, 404 com esse type -> NO_TELEGRAM_LINK, outro 404 -> CATALOG_ENTRY_NOT_FOUND, 401 -> SERVICE_UNAVAILABLE com log de erro (configuracao, nao vinculo). Contrato do api-gateway e fluxo n8n inalterados; chave bet_submit_no_link ja existe nos 3 locales. Achados absorvidos: (1) MAJOR - CHANGELOG em toda subtask, nao so na ultima (CI valida todo PR). (2) MINOR - remapear 401 esta no escopo (DoD pede o status real na doc). (3) MINOR - sem vinculo loga em info, nao warning. Fora de escopo: usuario sem vinculo so descobre depois de responder odd/stake (checagem antecipada seria feature nova de UX).",
+      "jira": "SV-806",
+      "subtasks": [
+        {
+          "id": "feat-014.1",
+          "name": "Sem vinculo na busca de catalogo responde bet_submit_no_link",
+          "status": "done",
+          "jira": "SV-807",
+          "owner": "agente",
+          "detail": "A busca de catalogo roda antes do envio com os mesmos headers, entao e ela que recebe o 404 sem vinculo e hoje o transforma em erro generico.",
+          "checklist": [
+            "Modulo `gateway_errors.py` com `is_telegram_account_not_found(response)` (status 404 e `type` terminando em `/telegram-account-not-found`, tolerante a corpo nao JSON).",
+            "`fetch_catalog` devolve `list[CatalogEntry] | CatalogFailure` (`UNAVAILABLE`, `NO_TELEGRAM_LINK`); sem vinculo loga em info.",
+            "`_advance_catalog`: `NO_TELEGRAM_LINK` salva o estado e responde `bet_submit_no_link` (status blocked).",
+            "Testes: catalog_client (404 com e sem o type, corpo nao JSON), orchestration, endpoint `/bets/capture` com 404 vindo do catalogo em pt-BR e en-US.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-014.2",
+          "name": "Envio: 404 sem vinculo vira NO_TELEGRAM_LINK e 401 vira indisponibilidade",
+          "status": "done",
+          "jira": "SV-808",
+          "owner": "agente",
+          "detail": "O envio mapeava 401 como sem vinculo e todo 404 como FK nao encontrada; o gateway faz o contrario.",
+          "checklist": [
+            "`submit_bet`: 404 com type telegram-account-not-found -> `NO_TELEGRAM_LINK`; outro 404 -> `CATALOG_ENTRY_NOT_FOUND`.",
+            "401 -> `SERVICE_UNAVAILABLE` com `logger.error` (X-Service-Key invalida ou header ausente).",
+            "Testes de test_bets_client atualizados e endpoint confirmando que o estado e preservado sem vinculo.",
+            "CHANGELOG.md: entrada em [Unreleased]."
+          ],
+          "validation": "pytest verde; PR subtask->story com CI verde."
+        },
+        {
+          "id": "feat-014.3",
+          "name": "Docs com o status real e verificacao final",
+          "status": "done",
+          "jira": "SV-809",
+          "owner": "agente",
+          "detail": "Vault e CLAUDE.md do servico afirmam que 401 significa sem vinculo.",
+          "checklist": [
+            "`docs/services/telegram-integration.md` (introducao e passo 6) e `CLAUDE.md` deste servico com 404 + type para sem vinculo e 401 como configuracao.",
+            "CHANGELOG.md: entrada em [Unreleased].",
+            "Vault (`docs/`) revisado: alguma descoberta desta feature - mecanismo reaproveitavel, gotcha de lib/config, lacuna de especificacao, decisao que diverge do ja documentado - sem nota correspondente? Se sim, atualizar/criar a nota do assunto (nao `docs/DECISIONS-LOG.md` a menos que divirja do TCC 1) no mesmo commit.",
+            "`./init.sh` verde; Delivery Reviewer e Test Suite Auditor rodados."
+          ],
+          "validation": "./init.sh verde; skills de revisao sem achado aberto."
+        }
+      ],
+      "evidence": {
+        "resumo": "Fechada em 2026-11-04 (story SV-806, PRs #62, #63, #64 e #65 em develop). Usuario sem vinculo recebe bet_submit_no_link nos 3 locales na busca de catalogo e no envio, com a conversa preservada.",
+        "secoes": [
+          {
+            "titulo": "O que foi feito",
+            "itens": [
+              "gateway_errors.is_telegram_account_not_found: 404 com type https://docs/errors/telegram-account-not-found (tolerante a corpo nao JSON).",
+              "fetch_catalog devolve CatalogFailure (UNAVAILABLE, NO_TELEGRAM_LINK) em vez de None; _advance_catalog responde bet_submit_no_link e salva o estado.",
+              "submit_bet: 404 sem vinculo -> NO_TELEGRAM_LINK, outro 404 -> CATALOG_ENTRY_NOT_FOUND, 401 -> SERVICE_UNAVAILABLE com log de erro; catalogo tambem loga 401 em error.",
+              "CLAUDE.md do servico, docs/services/telegram-integration.md (introducao, passos 4 e 6) e docs/services/api-gateway.md com o status real."
+            ]
+          },
+          {
+            "titulo": "Como foi verificado",
+            "itens": [
+              "./init.sh verde: ruff, mypy strict, 133 testes, cobertura 100%; suite repetida 3x sem falha.",
+              "Testes de endpoint com o fetch_catalog real e o 404 do gateway mockado (pt-BR e en-US) e com o envio real (404 sem vinculo e 401 preservam o estado).",
+              "CI verde nos 4 PRs; SonarCloud verde no PR #65 (story -> develop).",
+              "Plan Reviewer READY WITH CONCERNS; Delivery Reviewer CONCERNS (P3: 401 no catalogo logava warning, corrigido no PR #64); Test Suite Auditor PASS."
+            ]
+          },
+          {
+            "titulo": "O que divergiu do plano",
+            "itens": [
+              "CHANGELOG: as linhas das 3 subtasks foram gravadas pelo tools/jira_story.py na criacao da story, nao em cada PR.",
+              "Log de erro do 401 tambem na busca de catalogo (achado do Delivery Reviewer).",
+              "Nao validado no Telegram real: producao so roda a imagem nova depois do rollout manual."
+            ]
+          },
+          {
+            "titulo": "Fora de escopo",
+            "itens": [
+              "Usuario sem vinculo so recebe a orientacao depois de responder odd/stake (checagem antecipada seria feature nova de UX).",
+              "Teste de contrato do slug telegram-account-not-found entre api-gateway e telegram-integration nao existe; contrato documentado em docs/services/api-gateway.md."
+            ]
+          }
+        ]
+      },
+      "goal": "Usuario do Telegram sem vinculo que tenta registrar aposta recebe a orientacao `/vincular` nos 3 locales em vez de erro generico.",
+      "scope": "Leitura do `type` do problem+json do api-gateway na busca de catalogo e no envio; 401 tratado como falha de configuracao; docs e CLAUDE.md com o status real. Sem mudar o contrato do api-gateway nem o fluxo n8n."
     },
     {
       "id": "feat-015",
@@ -614,6 +700,51 @@
       "plan_review": "",
       "jira": "",
       "subtasks": [],
+      "evidence": ""
+    },
+    {
+      "id": "feat-017",
+      "name": "Ampliar imagens pequenas no OCR e corrigir regras de extracao",
+      "goal": "Melhorar a leitura dos campos medida em 2026-11-16 (tools/evidence/11-telegram-acuracia.py na imagem de producao): nas 5 fotos reais a odd saiu certa em 1 e houve 2 valores errados; nas 60 mensagens simuladas, 27 valores, 4 odds e 3 casas ficaram ausentes e 1 odd saiu errada.",
+      "scope": "ocr.extract_text amplia 2x (LANCZOS) imagens com menos de 1200 px de largura antes do Tesseract (as capturas de tela tem 300 a 570 px; no experimento, ampliar 2x deu odd e valor certos nos 5 bilhetes, sem valor errado). extraction: valor apostado tambem com 'N reais', 'valor N' e 'apostei N'; esses valores saem do texto antes da busca da odd solta; odd aceita virgula ou ponto final de frase logo depois do numero; casa reconhecida ignorando espacos ('bet 365', 'sporting bet'). Testes unitarios de cada caso.",
+      "description": "Sem dependencia nova (Pillow ja e dependencia). O contrato com o n8n e com o bets-service nao muda. Reavaliacao com um conjunto novo de mensagens (outra semente) para nao medir as regras nas mesmas mensagens usadas para escolhe-las.",
+      "dependencies": [
+        "feat-014"
+      ],
+      "plan_review": "2026-11-16, Plan Reviewer em auto-revisao curta (independencia reduzida, declarada). Veredito: READY WITH CONCERNS. (1) Ampliar so abaixo de 1200 px evita custo em fotos de camera, que ja sao grandes; o tempo do Tesseract cresce com a area, aceitavel para imagens de ate 1140 px. (2) Risco de sobreajuste: a ampliacao foi escolhida nos mesmos 5 bilhetes usados para medir; o texto do TCC declara isso, e as regras de texto sao medidas em mensagens novas (semente diferente). (3) Ignorar espacos na casa pode casar nomes curtos dentro de outras palavras ('kto'); mantido porque o catalogo atual nao tem nome que apareca como parte de palavra comum em portugues, e o bot pergunta a casa quando nao ha correspondencia no catalogo do tenant.",
+      "status": "done",
+      "subtasks": [
+        {
+          "id": "feat-017.1",
+          "name": "Ampliacao no OCR e regras de extracao",
+          "status": "done",
+          "detail": "ocr.py e extraction.py, com testes.",
+          "checklist": [
+            "Teste vermelho antes de cada correcao.",
+            "Ampliacao 2x abaixo de 1200 px.",
+            "Valor com 'reais', 'valor' e 'apostei'; odd com virgula depois; casa sem espacos.",
+            "CHANGELOG em [Unreleased].",
+            "Vault (docs/) revisado: docs/services/telegram-integration.md com a ampliacao e as regras."
+          ],
+          "validation": "./init.sh verde; CI e SonarCloud verdes; reavaliacao com 11-telegram-acuracia.py na imagem nova.",
+          "owner": "agente",
+          "jira": "SV-863"
+        }
+      ],
+      "jira": "SV-862",
+      "evidence": "Entregue em 2026-11-16 (feature/SV-862, PR #66). ocr.upscale_for_ocr amplia 2x abaixo de 1200 px; extraction aceita 'N reais', 'valor N', 'apostei N', virgula depois da odd e casa sem espacos. ./init.sh verde (143 testes, cobertura 100%). Reavaliacao com tools/evidence/11-telegram-acuracia.py na imagem nova em evidencias/20261116-telegram-pos-feat017. Conjunto de controle revelou falha anterior e mantida (valor em forma nao reconhecida tomado como odd, 8 de 40): feat-018 no backlog. Auto-revisao (Delivery Reviewer e Test Suite Auditor em modo curto, independencia reduzida)."
+    },
+    {
+      "id": "feat-018",
+      "name": "Confirmar os campos extraidos antes de registrar a aposta",
+      "description": "Achado na feat-017 (2026-11-16), conjunto de controle de tools/evidence/11-telegram-acuracia.py: quando o valor apostado vem escrito de um jeito que as regras nao reconhecem ('stake 5,00', 'BRL 50,00', '25,00 de stake'), o numero dele e tomado como odd sem perguntar (8 de 40 mensagens, antes e depois da feat-017), e a palavra 'stake' casa com a casa Stake. Como o fluxo nao mostra os campos para confirmacao antes do registro, o erro e gravado em silencio. Proposta: antes de enviar ao bets-service, mostrar odd, valor e casa e pedir confirmacao (sim/corrigir).",
+      "dependencies": [
+        "feat-017"
+      ],
+      "plan_review": "",
+      "status": "not-started",
+      "subtasks": [],
+      "jira": "",
       "evidence": ""
     }
   ]

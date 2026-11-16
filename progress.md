@@ -504,3 +504,20 @@ SonarCloud verdes). 117 testes, cobertura 100%. Delivery Reviewer PASS; Test Sui
 após corrigir estado compartilhado entre casos parametrizados (visto por mutação dirigida).
 Causa do `400` (odd vazia vinda de `parse_direct_answer`) registrada como `feat-016`.
 Pendente em produção: `kubectl rollout restart` do telegram-integration (deploy automático falha).
+
+
+## `feat-014` fechada — usuário sem vínculo recebe a orientação `/vincular` (2026-11-04)
+
+Sem vínculo, o `api-gateway` responde `404` com `type` `https://docs/errors/telegram-account-not-found`
+em toda rota chamada com `X-Service-Key`. O bot esperava `401` e tratava todo `404` como item de
+catálogo inexistente; como a busca de catálogo roda antes do envio, o usuário sem vínculo recebia
+`generic_error_pending`. Agora `gateway_errors.is_telegram_account_not_found` lê o `type`;
+`fetch_catalog` devolve `CatalogFailure` (`UNAVAILABLE`, `NO_TELEGRAM_LINK`) em vez de `None`; catálogo
+e envio respondem `bet_submit_no_link` e preservam a conversa. `401` (credencial de serviço inválida ou
+header ausente) virou indisponibilidade com log de erro, no catálogo e no envio.
+
+Story SV-806, subtasks SV-807..809, PRs #62..#64 (subtask->story) + #65 (story->develop, CI +
+SonarCloud verdes). 133 testes, cobertura 100%. Plan Reviewer READY WITH CONCERNS; Delivery Reviewer
+CONCERNS (P3: 401 no catálogo logava `warning`, corrigido em #64); Test Suite Auditor PASS.
+Fecha `epic-049` da raiz. Não validado no Telegram real: produção precisa de `kubectl rollout restart`
+do telegram-integration depois da release `develop -> main`.
