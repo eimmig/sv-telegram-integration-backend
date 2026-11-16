@@ -6,6 +6,7 @@ from dataclasses import dataclass
 _AMOUNT = r"(\d+(?:[.,]\d{1,2})?)"
 _ODD = r"(\d{1,3}[.,]\d{2})"
 _NOT_DIGIT = r"(?![\d])"
+_NOT_AFTER_NUMBER = r"(?<![\d.,])"
 # Valor apostado, em ordem de prioridade (feat-017 e feat-019): moeda antes ("R$ 50", "BRL 50,00",
 # "$12"), palavra-chave antes ("stake 5,00", "valor: 10", "aposta de 20", "apostei 100",
 # "valendo 30") ou depois ("50 reais", "20 conto", "25,00 de stake", "12.50$").
@@ -13,21 +14,21 @@ _STAKE_PATTERNS = (
     re.compile(r"(?:R\$|(?<![\d.,])\$|\bBRL)\s*" + _AMOUNT + _NOT_DIGIT, re.IGNORECASE),
     re.compile(r"\b(?:stake|valor|aposta\s+de|apostei|valendo)\s*(?:de\s*|:\s*|=\s*)?" + _AMOUNT + _NOT_DIGIT,
                re.IGNORECASE),
-    re.compile(r"(?<![\d.,])" + _AMOUNT + r"\s*(?:(?:reais|contos?|de\s+stake)\b|\$|BRL\b)", re.IGNORECASE),
+    re.compile(_NOT_AFTER_NUMBER + _AMOUNT + r"\s*(?:(?:reais|contos?|de\s+stake)\b|\$|BRL\b)", re.IGNORECASE),
 )
 # Odd com marca explicita: palavra-chave antes ("odd 1.85", "odds 2,10", "cotacao: 1.90", "pagando 2.05"),
 # arroba ("@2.35"), "x" colado ("x1,72", "4,75x") ou "de odd" depois ("1,23 de odd").
 _ODD_MARKED_PATTERNS = (
     # "de odd" depois vem primeiro: em "1,23 de odd 12.50$", a odd e o numero antes da palavra
-    re.compile(r"(?<![\d.,])" + _ODD + r"\s*de\s+odd\b", re.IGNORECASE),
+    re.compile(_NOT_AFTER_NUMBER + _ODD + r"\s*de\s+odd\b", re.IGNORECASE),
     re.compile(r"(?:\bodds?|cota[cç][aã]o|pagando)\D{0,10}?" + _ODD, re.IGNORECASE),
     re.compile(r"@\s*" + _ODD),
     re.compile(r"(?<![\w.,])x\s*" + _ODD + _NOT_DIGIT, re.IGNORECASE),
-    re.compile(r"(?<![\d.,])" + _ODD + r"x\b", re.IGNORECASE),
+    re.compile(_NOT_AFTER_NUMBER + _ODD + r"x\b", re.IGNORECASE),
 )
 # A odd solta nao pode vir colada em outro numero, mas pode vir seguida de virgula ou ponto
 # de pontuacao ("3.88, pela pixbet"; "odd 1.90.").
-_BARE_ODD_PATTERN = re.compile(r"(?<![\d.,])" + _ODD + r"(?!\d|[.,]\d)")
+_BARE_ODD_PATTERN = re.compile(_NOT_AFTER_NUMBER + _ODD + r"(?!\d|[.,]\d)")
 
 _KNOWN_BETTING_HOUSES = (
     "Bet365",
