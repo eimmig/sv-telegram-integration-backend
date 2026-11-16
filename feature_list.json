@@ -733,6 +733,19 @@
       ],
       "jira": "SV-862",
       "evidence": ""
+    },
+    {
+      "id": "feat-018",
+      "name": "Confirmar os campos extraidos antes de registrar a aposta",
+      "description": "Achado na feat-017 (2026-11-16), conjunto de controle de tools/evidence/11-telegram-acuracia.py: quando o valor apostado vem escrito de um jeito que as regras nao reconhecem ('stake 5,00', 'BRL 50,00', '25,00 de stake'), o numero dele e tomado como odd sem perguntar (8 de 40 mensagens, antes e depois da feat-017), e a palavra 'stake' casa com a casa Stake. Como o fluxo nao mostra os campos para confirmacao antes do registro, o erro e gravado em silencio. Proposta: antes de enviar ao bets-service, mostrar odd, valor e casa e pedir confirmacao (sim/corrigir).",
+      "dependencies": [
+        "feat-017"
+      ],
+      "plan_review": "",
+      "status": "not-started",
+      "subtasks": [],
+      "jira": "",
+      "evidence": ""
     }
   ]
 }
