@@ -133,3 +133,40 @@ def test_does_not_take_a_valor_amount_as_the_odd() -> None:
 def test_extracts_betting_house_written_with_spaces() -> None:
     assert extract_fields("na bet 365, odd 2.00").betting_house == "Bet365"
     assert extract_fields("na sporting bet, odd 2.00").betting_house == "Sportingbet"
+
+
+def test_extracts_stake_with_a_keyword_before_the_amount() -> None:
+    assert extract_fields("stake 5,00 Lakers x Celtics pagando 5,32").stake == "5.00"
+    assert extract_fields("BRL 50,00 | odd 1.53").stake == "50.00"
+    assert extract_fields("aposta de 20 na 1.90").stake == "20"
+    assert extract_fields("valendo 30, odd 2.00").stake == "30"
+
+
+def test_extracts_stake_with_a_keyword_after_the_amount() -> None:
+    assert extract_fields("25,00 de stake | a 1,84").stake == "25.00"
+    assert extract_fields("20 conto na odd 2.10").stake == "20"
+    assert extract_fields("12.50$ 1,23 de odd").stake == "12.50"
+
+
+def test_extracts_odd_marked_by_other_keywords() -> None:
+    assert extract_fields("stake 5,00 pagando 5,32").odd == "5.32"
+    assert extract_fields("ODD=2.41 valor 10").odd == "2.41"
+    assert extract_fields("Corinthians x Santos stake: 7,80 x1,72").odd == "1.72"
+    assert extract_fields("1,23 de odd 12.50$").odd == "1.23"
+
+
+def test_asks_for_the_odd_when_two_different_bare_numbers_remain() -> None:
+    result = extract_fields("Liverpool x Chelsea botei 32,50 handicap -1 5,22")
+
+    assert result.odd is None
+
+
+def test_accepts_the_same_bare_number_repeated_as_the_odd() -> None:
+    result = extract_fields("Cotacoes totais 2.70 Valor total de aposta R$10.00 Ganho total R$27.00 2.70")
+
+    assert result.odd == "2.70"
+
+
+def test_does_not_take_the_word_stake_before_an_amount_as_the_stake_house() -> None:
+    assert extract_fields("stake 100,00 | 4,94 de odd | na superbet").betting_house is None
+    assert extract_fields("apostei na Stake, R$ 10, odd 2.00").betting_house == "Stake"
