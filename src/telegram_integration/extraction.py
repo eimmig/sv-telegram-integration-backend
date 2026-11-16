@@ -14,7 +14,8 @@ _STAKE_PATTERNS = (
     re.compile(r"(?:R\$|(?<![\d.,])\$|\bBRL)\s*" + _AMOUNT + _NOT_DIGIT, re.IGNORECASE),
     re.compile(r"\b(?:stake|valor|aposta\s+de|apostei|valendo)\s*(?:de\s*|:\s*|=\s*)?" + _AMOUNT + _NOT_DIGIT,
                re.IGNORECASE),
-    re.compile(_NOT_AFTER_NUMBER + _AMOUNT + r"\s*(?:(?:reais|contos?|de\s+stake)\b|\$|BRL\b)", re.IGNORECASE),
+    re.compile(_NOT_AFTER_NUMBER + _AMOUNT + r"\s*(?:(?:reais|contos?|de\s+stake)\b|\$|BRL\b)",
+               re.IGNORECASE),
 )
 # Odd com marca explicita: palavra-chave antes ("odd 1.85", "odds 2,10", "cotacao: 1.90", "pagando 2.05"),
 # arroba ("@2.35"), "x" colado ("x1,72", "4,75x") ou "de odd" depois ("1,23 de odd").
