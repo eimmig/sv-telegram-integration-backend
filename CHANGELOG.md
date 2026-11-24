@@ -6,6 +6,8 @@ serviço adiciona uma entrada em `[Unreleased]` — verificado automaticamente p
 (ver `docs/CI-CD.md`).
 
 ## [Unreleased]
+
+## [0.4.1] - 2026-11-24
 - Foto do bilhete chegava vazia ao OCR: o no do n8n le o binario com getBinaryDataBuffer em vez de `$binary.data.data`
 - Aposta sem data no bilhete ia como meia-noite UTC (21h do dia anterior em Brasilia): agora vai com o instante atual
 
