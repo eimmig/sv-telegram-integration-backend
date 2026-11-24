@@ -130,35 +130,11 @@
     {
       "id": "normalize-photo-payload",
       "name": "Normalize photo payload",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [900, 200],
       "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "telegramUserId",
-              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"id\"]}}"
-            },
-            {
-              "name": "languageCode",
-              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"language_code\"]}}"
-            },
-            {
-              "name": "chatId",
-              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}"
-            },
-            {
-              "name": "photoBase64",
-              "value": "={{$binary.data.data}}"
-            },
-            {
-              "name": "telegramUpdateId",
-              "value": "={{$node[\"Telegram Trigger\"].json[\"update_id\"]}}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// O no Set com {{$binary.data.data}} saia sem a foto no n8n 1.100 (a imagem nao chegava ao OCR).\n// getBinaryDataBuffer le o binario baixado pelo no anterior em qualquer modo de armazenamento.\nconst trigger = $('Telegram Trigger').first().json;\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nreturn [{\n  json: {\n    telegramUserId: String(trigger.message.from.id),\n    languageCode: trigger.message.from.language_code ?? null,\n    chatId: String(trigger.message.chat.id),\n    photoBase64: buffer.toString('base64'),\n    telegramUpdateId: String(trigger.update_id),\n  },\n}];"
       }
     },
     {
