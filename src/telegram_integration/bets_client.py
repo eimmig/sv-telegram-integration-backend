@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import UTC, date, datetime, time
 from enum import Enum, auto
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -11,6 +13,10 @@ from telegram_integration.gateway_errors import is_telegram_account_not_found
 logger = logging.getLogger(__name__)
 
 _TIMEOUT_SECONDS = 5.0
+_LOCAL_TIMEZONE = ZoneInfo("America/Sao_Paulo")
+# Data sem hora vinda de outro dia (nao de hoje) vai ao meio-dia de Brasilia: longe da meia-noite,
+# o dia nao muda em nenhum fuso entre UTC-12 e UTC+11.
+_DATE_ONLY_LOCAL_TIME = time(12, 0)
 
 
 class SubmitOutcome(Enum):
@@ -40,6 +46,21 @@ def _service_key() -> str:
     return os.environ.get("SERVICE_KEY", "")
 
 
+def bet_instant(bet_date: str, now: datetime | None = None) -> str:
+    """Converte a data da aposta (AAAA-MM-DD, dia em Brasilia) no instante enviado como betDate.
+
+    Antes era sempre meia-noite UTC, ou seja, 21h do dia anterior em Brasilia: a aposta aparecia
+    um dia antes no historico. A aposta de hoje leva o instante atual; a de outro dia, meio-dia local.
+    """
+    current = now if now is not None else datetime.now(UTC)
+    day = date.fromisoformat(bet_date)
+    if day == current.astimezone(_LOCAL_TIMEZONE).date():
+        instant = current
+    else:
+        instant = datetime.combine(day, _DATE_ONLY_LOCAL_TIME, tzinfo=_LOCAL_TIMEZONE)
+    return instant.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def submit_bet(
     bet: dict[str, str | None], telegram_user_id: str, idempotency_key: str, correlation_id: str
 ) -> SubmitOutcome:
@@ -50,7 +71,7 @@ def submit_bet(
         "marketId": bet["marketId"],
         "stake": bet["stake"],
         "odd": bet["odd"],
-        "betDate": f"{bet['bet_date']}T00:00:00Z",
+        "betDate": bet_instant(str(bet["bet_date"])),
     }
     try:
         response = httpx.post(

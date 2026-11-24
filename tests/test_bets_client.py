@@ -1,10 +1,11 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
 
-from telegram_integration.bets_client import SubmitOutcome, submit_bet
+from telegram_integration.bets_client import SubmitOutcome, bet_instant, submit_bet
 
 _BET: dict[str, str | None] = {
     "odd": "1.85",
@@ -17,6 +18,13 @@ _BET: dict[str, str | None] = {
 }
 
 
+# a aposta de hoje vai com o instante atual; em UTC, pode ja ser o dia seguinte
+_BET_DATE_LOCAL_PREFIXES = (
+    str(_BET["bet_date"]),
+    (datetime.fromisoformat(str(_BET["bet_date"])) + timedelta(days=1)).date().isoformat(),
+)
+
+
 def _mock_client(status_code: int, problem_type: str | None = None) -> httpx.Client:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/v1/bets"
@@ -25,6 +33,7 @@ def _mock_client(status_code: int, problem_type: str | None = None) -> httpx.Cli
         assert request.headers["X-Correlation-Id"] == "corr-1"
         assert request.headers["Idempotency-Key"] == "idem-1"
         body = json.loads(request.content)
+        assert body.pop("betDate").startswith(_BET_DATE_LOCAL_PREFIXES)
         assert body == {
             "bettingHouseId": "bh-1",
             "sportId": "sp-1",
@@ -32,7 +41,6 @@ def _mock_client(status_code: int, problem_type: str | None = None) -> httpx.Cli
             "marketId": "mk-1",
             "stake": "50.00",
             "odd": "1.85",
-            "betDate": f"{_BET['bet_date']}T00:00:00Z",
         }
         if problem_type is None:
             return httpx.Response(status_code)
@@ -114,3 +122,25 @@ def test_distinguishes_missing_link_from_missing_catalog_entry_on_404(
     outcome = submit_bet(_BET, "999", idempotency_key="idem-1", correlation_id="corr-1")
 
     assert outcome is expected
+
+
+def test_bet_instant_today_in_brasilia_uses_current_instant_even_after_utc_midnight() -> None:
+    # 24/11 21:30 em Brasilia = 25/11 00:30 UTC; antes ia como 24/11 00:00 UTC (23/11 21h local)
+    now = datetime(2026, 11, 25, 0, 30, 15, tzinfo=UTC)
+    assert bet_instant("2026-11-24", now) == "2026-11-25T00:30:15Z"
+
+
+def test_bet_instant_today_in_the_morning_uses_current_instant() -> None:
+    now = datetime(2026, 11, 24, 11, 5, 0, tzinfo=UTC)
+    assert bet_instant("2026-11-24", now) == "2026-11-24T11:05:00Z"
+
+
+def test_bet_instant_other_day_goes_to_noon_in_brasilia() -> None:
+    now = datetime(2026, 11, 24, 15, 0, 0, tzinfo=UTC)
+    assert bet_instant("2026-11-20", now) == "2026-11-20T15:00:00Z"
+
+
+def test_bet_instant_without_now_uses_the_clock() -> None:
+    today_local = datetime.now(UTC).astimezone(ZoneInfo("America/Sao_Paulo")).date().isoformat()
+    sent = datetime.strptime(bet_instant(today_local), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    assert abs((datetime.now(UTC) - sent).total_seconds()) < 5
